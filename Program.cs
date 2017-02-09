@@ -1,14 +1,19 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Configuration;
+using System.Net.Http;
+using System.Threading;
 using TwitchLib;
 using TwitchLib.Events.Client;
 using TwitchLib.Models.Client;
+using VainBotTwitch.Classes;
 
 namespace VainBotTwitch
 {
     class Program
     {
         static TwitchClient client;
+        static HttpClient httpClient = new HttpClient();
 
         static void Main(string[] args) => new Program().Run();
 
@@ -19,23 +24,38 @@ namespace VainBotTwitch
 
             client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
 
-            client.OnConnected += clientConnected;
-            client.OnJoinedChannel += clientJoinedChannel;
+            client.AddChatCommandIdentifier('!');
+            client.OnChatCommandReceived += wowToken;
 
             client.Connect();
 
-            Console.ReadLine();
+            while (true)
+            {
+                Thread.Sleep(1000);
+            }
         }
-
-        void clientConnected(object sender, OnConnectedArgs e)
+        
+        async void wowToken(object sender, OnChatCommandReceivedArgs e)
         {
-            Console.WriteLine("Connected!");
-        }
+            if (e.Command.Command.ToLower() != "token")
+                return;
 
-        void clientJoinedChannel(object sender, OnJoinedChannelArgs e)
-        {
-            client.SendMessage(client.GetJoinedChannel(e.Channel), "Oh look it works.");
-            Console.WriteLine($"Joined channel {e.Channel}");
+            var channel = client.GetJoinedChannel(e.Command.ChatMessage.Channel);
+
+            var result = await httpClient.GetAsync("https://wowtoken.info/snapshot.json");
+            if (!result.IsSuccessStatusCode)
+            {
+                client.SendMessage(channel, "Couldn't get the WoW token info. Sorry!");
+                return;
+            }
+
+            var resultString = await result.Content.ReadAsStringAsync();
+            var tokenResponse = JsonConvert.DeserializeObject<WowTokenResponse>(resultString);
+
+            var naPrice = tokenResponse.Na.Formatted.Buy;
+            var euPrice = tokenResponse.Eu.Formatted.Buy;
+
+            client.SendMessage(channel, "NA: " + naPrice + " | EU: " + euPrice);
         }
     }
 }
