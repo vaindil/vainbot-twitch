@@ -54,9 +54,9 @@ namespace VainBotTwitch.Classes
         [JsonProperty(PropertyName = "temp")]
         public decimal Temperature { get; set; }
 
-        public int Pressure { get; set; }
+        public decimal Pressure { get; set; }
 
-        public int Humidity { get; set; }
+        public decimal Humidity { get; set; }
 
         [JsonProperty(PropertyName = "temp_min")]
         public decimal MinTemp { get; set; }

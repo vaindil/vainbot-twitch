@@ -18,7 +18,7 @@ namespace VainBotTwitch
         static TwitchClient client;
         static HttpClient httpClient = new HttpClient();
         static Random rng = new Random();
-        static Regex validZip = new Regex(@"^[0-9]{6}$");
+        static Regex validZip = new Regex(@"^[0-9]{5}$");
         static string openWeatherMapApiKey;
 
         static void Main(string[] args) => new Program().Run();
@@ -51,6 +51,7 @@ namespace VainBotTwitch
             client.AddChatCommandIdentifier('!');
 
             client.OnChatCommandReceived += slothFacts;
+            client.OnChatCommandReceived += woppyWeather;
 
             var throttler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
             client.ChatThrottler = throttler;
@@ -89,15 +90,24 @@ namespace VainBotTwitch
             }
 
             var response = await httpClient
-                .GetAsync($"api.openweathermap.org/data/2.5/weather?zip={e.Command.ArgumentsAsString},us");
+                .GetAsync($"http://api.openweathermap.org/data/2.5/weather?zip={e.Command.ArgumentsAsString},us&APPID={openWeatherMapApiKey}");
+            var respString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                client.SendMessage(channel, "Error getting the weather. Sorry!");
+                Console.WriteLine("Weather error, code " + response.StatusCode.ToString());
+                Console.WriteLine("Weather content: " + respString);
+
+                client.SendMessage(channel, "Error getting the weather. IT'S THEIR FAULT, NOT MINE!");
                 return;
             }
 
+            var weather = JsonConvert.DeserializeObject<OpenWeatherMapResponse>(respString);
 
+            var temp = (int)Math.Round(((9 / 5) * (weather.Main.Temperature - 273)) + 32);
+
+            client.SendMessage(channel, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
+                $"{weather.Weather[0].Description}, {temp}° F");
         }
 
         static List<string> _slothFacts = new List<string>
