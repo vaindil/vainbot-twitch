@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using TwitchLib;
 using TwitchLib.Events.Client;
@@ -17,6 +18,8 @@ namespace VainBotTwitch
         static TwitchClient client;
         static HttpClient httpClient = new HttpClient();
         static Random rng = new Random();
+        static Regex validZip = new Regex(@"^[0-9]{6}$");
+        static string openWeatherMapApiKey;
 
         static void Main(string[] args) => new Program().Run();
 
@@ -30,20 +33,24 @@ namespace VainBotTwitch
             if (oauth == null)
                 oauth = ConfigurationManager.AppSettings["twitchOauth"];
 
+            openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY");
+            if (openWeatherMapApiKey == null)
+                openWeatherMapApiKey = ConfigurationManager.AppSettings["openWeatherMapApiKey"];
+
             if (username == null)
                 throw new ArgumentNullException(nameof(username), "No Twitch username found");
 
             if (oauth == null)
                 throw new ArgumentNullException(nameof(oauth), "No Twitch OAuth token found");
 
+            if (openWeatherMapApiKey == null)
+                throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
+
             client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
 
             client.AddChatCommandIdentifier('!');
 
             client.OnChatCommandReceived += slothFacts;
-
-            //client.OnChatCommandReceived += wowToken;
-            //client.OnChatCommandReceived += whatANerd;
 
             var throttler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
             client.ChatThrottler = throttler;
@@ -67,38 +74,30 @@ namespace VainBotTwitch
 
             client.SendMessage(channel, _slothFacts[i]);
         }
-        
-        async void wowToken(object sender, OnChatCommandReceivedArgs e)
+
+        async void woppyWeather(object sender, OnChatCommandReceivedArgs e)
         {
-            if (e.Command.Command.ToLower() != "token")
+            if (e.Command.Command.ToLower() != "woppy")
                 return;
 
             var channel = GetChannel(e);
 
-            var result = await httpClient.GetAsync("https://wowtoken.info/snapshot.json");
-            if (!result.IsSuccessStatusCode)
+            if (!validZip.IsMatch(e.Command.ArgumentsAsString))
             {
-                client.SendMessage(channel, "Couldn't get the WoW token info. Sorry!");
+                client.SendMessage(channel, "That's not a valid US zip code. Try again!");
                 return;
             }
 
-            var resultString = await result.Content.ReadAsStringAsync();
-            var tokenResponse = JsonConvert.DeserializeObject<WowTokenResponse>(resultString);
+            var response = await httpClient
+                .GetAsync($"api.openweathermap.org/data/2.5/weather?zip={e.Command.ArgumentsAsString},us");
 
-            var naPrice = tokenResponse.Na.Formatted.Buy;
-            var euPrice = tokenResponse.Eu.Formatted.Buy;
-
-            client.SendMessage(channel, "NA: " + naPrice + " | EU: " + euPrice);
-        }
-
-        void whatANerd(object sender, OnChatCommandReceivedArgs e)
-        {
-            if (e.Command.Command.ToLower() != "nerd")
+            if (!response.IsSuccessStatusCode)
+            {
+                client.SendMessage(channel, "Error getting the weather. Sorry!");
                 return;
+            }
 
-            var channel = GetChannel(e);
 
-            client.SendMessage(channel, "Wow @" + e.Command.ChatMessage.Username + " , could you be any more of a nerd?");
         }
 
         static List<string> _slothFacts = new List<string>
