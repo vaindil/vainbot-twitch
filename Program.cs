@@ -98,7 +98,7 @@ namespace VainBotTwitch
 
             var channel = GetChannel(e);
 
-            client.SendMessage(channel, $"Wow @{e.Command.ChatMessage.Username} , could you be any " +
+            client.SendMessage(channel, "Wow @" + e.Command.ChatMessage.Username + " , could you be any " +
                 "more of a nerd?");
         }
 
