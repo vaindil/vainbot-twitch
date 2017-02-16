@@ -98,8 +98,7 @@ namespace VainBotTwitch
 
             var channel = GetChannel(e);
 
-            client.SendMessage(channel, "Wow @" + e.Command.ChatMessage.Username + " , could you be any " +
-                "more of a nerd?");
+            client.SendMessage(channel, "Wow @" + e.Command.ChatMessage.Username + " , could you be any more of a nerd?");
         }
 
         static List<string> _slothFacts = new List<string>
