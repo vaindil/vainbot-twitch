@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Entity;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
 using TwitchLib.Models.Client;
@@ -50,8 +52,7 @@ namespace VainBotTwitch
 
             client.AddChatCommandIdentifier('!');
 
-            client.OnChatCommandReceived += slothFacts;
-            client.OnChatCommandReceived += woppyWeather;
+            client.OnChatCommandReceived += CommandHandler;
 
             var throttler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
             client.ChatThrottler = throttler;
@@ -64,23 +65,63 @@ namespace VainBotTwitch
             }
         }
 
-        void slothFacts(object sender, OnChatCommandReceivedArgs e)
+        async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
         {
-            if (e.Command.Command.ToLower() != "slothfact"
-                && e.Command.Command.ToLower() != "slothfacts")
+            if (e.Command.ChatMessage.BotUsername == e.Command.ChatMessage.Username)
                 return;
 
+            var command = e.Command.Command.ToLower();
+
+            if (e.Command.ArgumentsAsList.Count == 0)
+            {
+                switch (command)
+                {
+                    case "slothies":
+                    case "slothy":
+                        await GetSlothies(sender, e);
+                        break;
+
+                    case "slothfact":
+                    case "slothfacts":
+                        SlothFacts(sender, e);
+                        break;
+
+                    case "woppy":
+                    case "weather":
+                        await WoppyWeather(sender, e);
+                        break;
+                }
+
+                return;
+            }
+        }
+
+        async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
+        {
+            var channel = GetChannel(e);
+            var username = e.Command.ChatMessage.Username.ToLower();
+            var count = 0M;
+
+            using (var db = new VbContext())
+            {
+                var record = await db.Slothies.FirstOrDefaultAsync(s => s.Username == username);
+                if (record != null)
+                    count = record.Count;
+            }
+
+            client.SendMessage(channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}.");
+        }
+
+        void SlothFacts(object sender, OnChatCommandReceivedArgs e)
+        {
             var i = rng.Next(0, _slothFacts.Count);
             var channel = GetChannel(e);
 
             client.SendMessage(channel, _slothFacts[i]);
         }
 
-        async void woppyWeather(object sender, OnChatCommandReceivedArgs e)
+        async Task WoppyWeather(object sender, OnChatCommandReceivedArgs e)
         {
-            if (e.Command.Command.ToLower() != "woppy")
-                return;
-
             var channel = GetChannel(e);
 
             if (!validZip.IsMatch(e.Command.ArgumentsAsString))
