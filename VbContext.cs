@@ -15,15 +15,16 @@ namespace VainBotTwitch
         {
             modelBuilder.Entity<SlothyRecord>()
                 .ToTable("slothy_record")
-                .HasKey(r => r.Username);
+                .HasKey(r => r.UserId);
 
             modelBuilder.Entity<SlothyRecord>()
-                .Property(r => r.Username)
-                .HasColumnName("username");
+                .Property(r => r.UserId)
+                .HasColumnName("user_id");
 
             modelBuilder.Entity<SlothyRecord>()
                 .Property(r => r.Count)
-                .IsRequired();
+                .IsRequired()
+                .HasPrecision(8, 2);
 
             base.OnModelCreating(modelBuilder);
         }

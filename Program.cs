@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
+using TwitchLib.Models.API;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
@@ -35,7 +36,11 @@ namespace VainBotTwitch
             if (oauth == null)
                 oauth = ConfigurationManager.AppSettings["twitchOauth"];
 
-            openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY");
+            var clientId = Environment.GetEnvironmentVariable("VB_TWITCH_CLIENT_ID");
+            if (clientId == null)
+                clientId = ConfigurationManager.AppSettings["twitchClientId"];
+
+            var openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY");
             if (openWeatherMapApiKey == null)
                 openWeatherMapApiKey = ConfigurationManager.AppSettings["openWeatherMapApiKey"];
 
@@ -45,10 +50,14 @@ namespace VainBotTwitch
             if (oauth == null)
                 throw new ArgumentNullException(nameof(oauth), "No Twitch OAuth token found");
 
+            if (clientId == null)
+                throw new ArgumentNullException(nameof(clientId), "No Twitch client ID found");
+
             if (openWeatherMapApiKey == null)
                 throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
 
             client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
+            TwitchApi.SetClientId(clientId);
 
             client.AddChatCommandIdentifier('!');
 
@@ -72,15 +81,10 @@ namespace VainBotTwitch
 
             var command = e.Command.Command.ToLower();
 
-            if (e.Command.ArgumentsAsList.Count == 0)
+            if (command != "slothies" && command != "slothy")
             {
                 switch (command)
                 {
-                    case "slothies":
-                    case "slothy":
-                        await GetSlothies(sender, e);
-                        break;
-
                     case "slothfact":
                     case "slothfacts":
                         SlothFacts(sender, e);
@@ -94,22 +98,111 @@ namespace VainBotTwitch
 
                 return;
             }
+
+            var argCount = e.Command.ArgumentsAsList.Count;
+
+            if (argCount == 0)
+            {
+                await GetSlothies(sender, e);
+                return;
+            }
+
+            if (argCount == 2)
+            {
+                await UpdateSlothies(sender, e);
+                return;
+            }
+
+            client.SendMessage(GetChannel(e), "That's not a valid slothies command, you nerd.");
         }
 
         async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
         {
             var channel = GetChannel(e);
-            var username = e.Command.ChatMessage.Username.ToLower();
             var count = 0M;
 
             using (var db = new VbContext())
             {
-                var record = await db.Slothies.FirstOrDefaultAsync(s => s.Username == username);
+                var record = await db.Slothies
+                    .FirstOrDefaultAsync(s => s.UserId == e.Command.ChatMessage.UserId);
                 if (record != null)
                     count = record.Count;
             }
 
             client.SendMessage(channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}.");
+        }
+
+        async Task UpdateSlothies(object sender, OnChatCommandReceivedArgs e)
+        {
+            var channel = GetChannel(e);
+
+            var username = e.Command.ArgumentsAsList[0].ToLower().TrimStart('@');
+            if (username.Length >= 200)
+            {
+                client.SendMessage(channel, "That's not a valid user, you nerd.");
+                return;
+            }
+
+            var usernameList = new List<string> { username };
+            var users = await TwitchApi.Users.GetUsersV5Async(usernameList);
+            if (users.Count != 1)
+            {
+                client.SendMessage(channel, "That's not a valid user, you nerd.");
+                return;
+            }
+
+            var userId = users[0].Id.ToString();
+
+            if (userId == e.Command.ChatMessage.UserId)
+            {
+                client.SendMessage(channel, "You can't change your own slothies, you nerd.");
+                return;
+            }
+
+            if (userId == "45447900")
+            {
+                client.SendMessage(channel, "vaindil's slothies can't be edited, you nerd.");
+                return;
+            }
+
+            var validDecimal = decimal.TryParse(e.Command.ArgumentsAsList[1], out var count);
+            if (!validDecimal)
+            {
+                client.SendMessage(channel, "That's not a valid number, you nerd.");
+                return;
+            }
+
+            count = Math.Round(count, 2);
+
+            if (!e.Command.ChatMessage.IsModerator)
+            {
+                client.SendMessage(channel, "You're not a mod, you nerd.");
+                return;
+            }
+
+            using (var db = new VbContext())
+            {
+                var record = await db.Slothies.FindAsync(userId);
+                if (record == null)
+                {
+                    var newRecord = new SlothyRecord
+                    {
+                        UserId = userId,
+                        Count = count
+                    };
+
+                    db.Slothies.Add(newRecord);
+                }
+                else
+                {
+                    record.Count += count;
+                    count = record.Count;
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+            client.SendMessage(channel, $"{users[0].Name} now has {count.ToDisplayString()}.");
         }
 
         void SlothFacts(object sender, OnChatCommandReceivedArgs e)
