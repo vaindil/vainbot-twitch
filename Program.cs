@@ -195,6 +195,11 @@ namespace VainBotTwitch
                 {
                     record.Count += count;
                     count = record.Count;
+
+                    if (count == 0)
+                    {
+                        db.Slothies.Remove(record);
+                    }
                 }
 
                 await db.SaveChangesAsync();

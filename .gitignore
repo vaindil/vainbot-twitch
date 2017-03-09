@@ -10,6 +10,8 @@
 config/
 secrets.config
 connectionStrings.config
+PublishProfiles/
+webjob-publish-settings.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
