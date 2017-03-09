@@ -200,7 +200,7 @@ namespace VainBotTwitch
                 await db.SaveChangesAsync();
             }
 
-            client.SendMessage(channel, $"{users[0].Name} now has {count.ToDisplayString()}. {RandEmote()}");
+            client.SendMessage(channel, $"{username} now has {count.ToDisplayString()}. {RandEmote()}");
         }
 
         void SlothFacts(object sender, OnChatCommandReceivedArgs e)
