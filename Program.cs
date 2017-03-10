@@ -134,7 +134,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                client.SendMessage(GetChannel(e), $"That's not a valid slothies command, you nerd. {RandEmote()}");
+                client.SendMessage(GetChannel(e), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
                 return;
             }
             
@@ -165,7 +165,7 @@ namespace VainBotTwitch
 
             if (streamers.Count == 0)
             {
-                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {RandEmote()}");
+                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
                 return;
             }
 
@@ -176,7 +176,7 @@ namespace VainBotTwitch
                 url += s + "/";
             }
 
-            client.SendMessage(GetChannel(e), $"Watch ALL of the nerds! " + url + $" {RandEmote()}");
+            client.SendMessage(GetChannel(e), $"Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
         }
 
         async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e)
@@ -189,7 +189,7 @@ namespace VainBotTwitch
                     await db.SaveChangesAsync();
                 }
 
-                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {RandEmote()}");
+                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
                 return;
             }
 
@@ -197,7 +197,7 @@ namespace VainBotTwitch
             if (validUsernames.Count != e.Command.ArgumentsAsList.Count)
             {
                 client.SendMessage(GetChannel(e),
-                    $"At least one of those isn't a valid user, you nerd. {RandEmote()}");
+                    $"At least one of those isn't a valid user, you nerd. {Utils.RandEmote()}");
             }
 
             using (var db = new VbContext())
@@ -232,7 +232,7 @@ namespace VainBotTwitch
             }
 
             client.SendMessage(
-                channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}. {RandEmote()}");
+                channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
         async Task UpdateSlothies(object sender, OnChatCommandReceivedArgs e)
@@ -242,7 +242,7 @@ namespace VainBotTwitch
             var username = e.Command.ArgumentsAsList[0].ToLower().TrimStart('@');
             if (username.Length >= 200)
             {
-                client.SendMessage(channel, $"That's not a valid user, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -250,7 +250,7 @@ namespace VainBotTwitch
             var users = await TwitchApi.Users.GetUsersV5Async(usernameList);
             if (users.Count != 1)
             {
-                client.SendMessage(channel, $"That's not a valid user, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -258,20 +258,20 @@ namespace VainBotTwitch
 
             if (userId == e.Command.ChatMessage.UserId)
             {
-                client.SendMessage(channel, $"You can't change your own slothies, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"You can't change your own slothies, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
             if (userId == "45447900")
             {
-                client.SendMessage(channel, $"vaindil's slothies can't be edited, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"vaindil's slothies can't be edited, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
             var validDecimal = decimal.TryParse(e.Command.ArgumentsAsList[1], out var count);
             if (!validDecimal)
             {
-                client.SendMessage(channel, $"That's not a valid number, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"That's not a valid number, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -279,7 +279,7 @@ namespace VainBotTwitch
 
             if (!e.Command.ChatMessage.IsModerator)
             {
-                client.SendMessage(channel, $"You're not a mod, you nerd. {RandEmote()}");
+                client.SendMessage(channel, $"You're not a mod, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -310,7 +310,7 @@ namespace VainBotTwitch
                 await db.SaveChangesAsync();
             }
 
-            client.SendMessage(channel, $"{username} now has {count.ToDisplayString()}. {RandEmote()}");
+            client.SendMessage(channel, $"{username} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
         void SlothFacts(object sender, OnChatCommandReceivedArgs e)
@@ -327,12 +327,14 @@ namespace VainBotTwitch
 
             if (!validZip.IsMatch(e.Command.ArgumentsAsString))
             {
-                client.SendMessage(channel, $"That's not a valid US zip code. Try again! {RandEmote()}");
+                client.SendMessage(channel, $"That's not a valid US zip code. Try again! {Utils.RandEmote()}");
                 return;
             }
 
             var response = await httpClient
-                .GetAsync($"http://api.openweathermap.org/data/2.5/weather?zip={e.Command.ArgumentsAsString},us&APPID={openWeatherMapApiKey}");
+                .GetAsync($"http://api.openweathermap.org/data/2.5/weather?" +
+                $"zip={e.Command.ArgumentsAsString},us&APPID={openWeatherMapApiKey}");
+
             var respString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -340,7 +342,7 @@ namespace VainBotTwitch
                 Console.WriteLine("Weather error, code " + response.StatusCode.ToString());
                 Console.WriteLine("Weather content: " + respString);
 
-                client.SendMessage(channel, $"Error getting the weather. IT'S THEIR FAULT, NOT MINE! {RandEmote()}");
+                client.SendMessage(channel, $"Error getting the weather. IT'S THEIR FAULT, NOT MINE! {Utils.RandEmote()}");
                 return;
             }
 
@@ -349,7 +351,7 @@ namespace VainBotTwitch
             var temp = (int)Math.Round(((9 / 5) * (weather.Main.Temperature - 273)) + 32);
 
             client.SendMessage(channel, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
-                $"{weather.Weather[0].Description}, {temp}° F {RandEmote()}");
+                $"{weather.Weather[0].Description}, {temp}° F {Utils.RandEmote()}");
         }
 
         async Task LogToDb(LogEntry entry)
@@ -396,51 +398,13 @@ namespace VainBotTwitch
             "Sloths tend to prefer the leaves of the Cecropia tree, sometimes known as pumpwoods."
         };
 
-        static List<string> _emotes = new List<string>
-        {
-            "4Head",
-            "BabyRage",
-            "BCWarrior",
-            "BloodTrail",
-            "CoolCat",
-            "CorgiDerp",
-            "CurseLit",
-            "DansGame",
-            "EleGiggle",
-            "FailFish",
-            "FrankerZ",
-            "GivePLZ",
-            "HeyGuys",
-            "Jebaited",
-            "Kappa",
-            "KappaPride",
-            "KappaRoss",
-            "Keepo",
-            "Kreygasm",
-            "MingLee",
-            "MrDestructoid",
-            "OhMyDog",
-            "OSsloth",
-            "PogChamp",
-            "ResidentSleeper",
-            "SMOrc",
-            "StinkyCheese",
-            "SwiftRage",
-            "TakeNRG",
-            "TheIlluminati",
-            "VoHiYo",
-            "WutFace"
-        };
+        
 
         JoinedChannel GetChannel(OnChatCommandReceivedArgs e)
         {
             return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
         }
 
-        string RandEmote()
-        {
-            var r = rng.Next(0, _emotes.Count);
-            return _emotes[r];
-        }
+        
     }
 }

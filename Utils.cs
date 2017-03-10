@@ -1,7 +1,12 @@
-﻿namespace VainBotTwitch
+﻿using System;
+using System.Collections.Generic;
+
+namespace VainBotTwitch
 {
     public static class Utils
     {
+        static Random rng = new Random();
+
         public static string ToDisplayString(this decimal count)
         {
             var display = count.GetNumberString() + " ";
@@ -23,5 +28,47 @@
             else
                 return num.ToString();
         }
+
+        public static string RandEmote()
+        {
+            var r = rng.Next(0, _emotes.Count);
+            return _emotes[r];
+        }
+
+        static List<string> _emotes = new List<string>
+        {
+            "4Head",
+            "BabyRage",
+            "BCWarrior",
+            "BloodTrail",
+            "CoolCat",
+            "CorgiDerp",
+            "CurseLit",
+            "DansGame",
+            "EleGiggle",
+            "FailFish",
+            "FrankerZ",
+            "GivePLZ",
+            "HeyGuys",
+            "Jebaited",
+            "Kappa",
+            "KappaPride",
+            "KappaRoss",
+            "Keepo",
+            "Kreygasm",
+            "MingLee",
+            "MrDestructoid",
+            "OhMyDog",
+            "OSsloth",
+            "PogChamp",
+            "ResidentSleeper",
+            "SMOrc",
+            "StinkyCheese",
+            "SwiftRage",
+            "TakeNRG",
+            "TheIlluminati",
+            "VoHiYo",
+            "WutFace"
+        };
     }
 }
