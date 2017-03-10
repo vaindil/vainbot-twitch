@@ -64,6 +64,7 @@ namespace VainBotTwitch
             client.OnConnected += ConnectedLog;
             client.OnDisconnected += DisconnectedLog;
             client.OnConnectionError += ConnectionErrorLog;
+            client.OnIncorrectLogin += IncorrectLoginLog;
 
             client.OnChatCommandReceived += CommandHandler;
 
@@ -99,6 +100,13 @@ namespace VainBotTwitch
             await LogToDb(entry);
         }
 
+        async void IncorrectLoginLog(object sender, OnIncorrectLoginArgs e)
+        {
+            var entry = new LogEntry($"Incorrect login. Error: {e.Exception.Message}");
+
+            await LogToDb(entry);
+        }
+
         async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
         {
             if (e.Command.ChatMessage.BotUsername == e.Command.ChatMessage.Username)
@@ -128,6 +136,15 @@ namespace VainBotTwitch
                     return;
                 }
 
+                if (argCount > 0 && e.Command.ArgumentsAsList[0].ToLower() == "help")
+                {
+                    client.SendMessage(GetChannel(e), "Slothies are a made-up points system. " +
+                        "They give you nothing other than bragging rights. Use !slothies to check how " +
+                        $"many you have. {Utils.RandEmote()}");
+
+                    return;
+                }
+
                 if (argCount == 2)
                 {
                     await UpdateSlothies(sender, e);
@@ -140,13 +157,32 @@ namespace VainBotTwitch
             
             if (command == "multi" || command == "multitwitch")
             {
-                if (argCount == 0 || !e.Command.ChatMessage.IsModerator)
+                if (argCount == 0)
                 {
                     await GetMultitwitch(sender, e);
                     return;
                 }
 
-                if (argCount != 0 && e.Command.ChatMessage.IsModerator)
+                if (argCount > 0 && e.Command.ArgumentsAsList[0].ToLower() == "help")
+                {
+                    if (!e.Command.ChatMessage.IsModerator)
+                    {
+                        client.SendMessage(GetChannel(e), "See who the nerd is playing with and " +
+                            $"watch them all together using !multi. {Utils.RandEmote()}");
+                    }
+                    else
+                    {
+                        client.SendMessage(GetChannel(e), $"{Utils.RandEmote()} Mods: Clear the multi " +
+                            "link using !multi clear. " +
+                            "Set streamers by providing a list. For example: !multi gmart strippin");
+                    }
+
+                    return;
+                }
+
+                if (argCount > 0
+                    && e.Command.ArgumentsAsList[0].ToLower() != "help"
+                    && e.Command.ChatMessage.IsModerator)
                 {
                     await UpdateMultitwitch(sender, e);
                     return;
@@ -324,6 +360,16 @@ namespace VainBotTwitch
         async Task WoppyWeather(object sender, OnChatCommandReceivedArgs e)
         {
             var channel = GetChannel(e);
+
+            if (e.Command.ArgumentsAsList.Count > 0
+                && e.Command.ArgumentsAsList[0].ToLower() == "help")
+            {
+                client.SendMessage(channel, "Woppy the weather bot can get your current weather. " +
+                    "Use !woppy followed by a US zip code, for example !woppy 90210. Only works " +
+                    $"in the US for now! {Utils.RandEmote()}");
+
+                return;
+            }
 
             if (!validZip.IsMatch(e.Command.ArgumentsAsString))
             {
