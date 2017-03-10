@@ -10,6 +10,7 @@ namespace VainBotTwitch
         public VbContext() : base("name=VbContext") { }
 
         public virtual DbSet<SlothyRecord> Slothies { get; set; }
+        public virtual DbSet<MultiStreamer> MultiStreamers { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -25,6 +26,15 @@ namespace VainBotTwitch
                 .Property(r => r.Count)
                 .IsRequired()
                 .HasPrecision(8, 2);
+
+            modelBuilder.Entity<MultiStreamer>()
+                .ToTable("multi_streamer")
+                .HasKey(s => s.Username);
+
+            modelBuilder.Entity<MultiStreamer>()
+                .Property(s => s.Username)
+                .HasColumnName("username")
+                .HasMaxLength(50);
 
             base.OnModelCreating(modelBuilder);
         }

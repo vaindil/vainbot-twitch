@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Entity;
+using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -78,40 +80,72 @@ namespace VainBotTwitch
                 return;
 
             var command = e.Command.Command.ToLower();
-
-            if (command != "slothies" && command != "slothy")
+            var argCount = e.Command.ArgumentsAsList.Count;
+            
+            switch (command)
             {
-                switch (command)
-                {
-                    case "slothfact":
-                    case "slothfacts":
-                        SlothFacts(sender, e);
-                        break;
+                case "slothfact":
+                case "slothfacts":
+                    SlothFacts(sender, e);
+                    return;
 
-                    case "woppy":
-                    case "weather":
-                        await WoppyWeather(sender, e);
-                        break;
+                case "woppy":
+                case "weather":
+                    await WoppyWeather(sender, e);
+                    return;
+            }
+            
+            if (command == "slothy" || command == "slothies")
+            {
+                if (argCount == 0)
+                {
+                    await GetSlothies(sender, e);
+                    return;
                 }
 
+                if (argCount == 2)
+                {
+                    await UpdateSlothies(sender, e);
+                    return;
+                }
+
+                client.SendMessage(GetChannel(e), $"That's not a valid slothies command, you nerd. {RandEmote()}");
                 return;
             }
-
-            var argCount = e.Command.ArgumentsAsList.Count;
-
-            if (argCount == 0)
+            
+            if (command == "multi" || command == "multitwitch")
             {
-                await GetSlothies(sender, e);
-                return;
+                if (argCount == 0 || !e.Command.ChatMessage.IsModerator)
+                {
+                    await GetMultitwitch(sender, e);
+                    return;
+                }
             }
+        }
 
-            if (argCount == 2)
+        async Task GetMultitwitch(object sender, OnChatCommandReceivedArgs e)
+        {
+            List<string> streamers;
+
+            using (var db = new VbContext())
             {
-                await UpdateSlothies(sender, e);
+                streamers = await db.MultiStreamers.Select(s => s.Username).ToListAsync();
+            }
+
+            if (streamers.Count == 0)
+            {
+                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {RandEmote()}");
                 return;
             }
 
-            client.SendMessage(GetChannel(e), $"That's not a valid slothies command, you nerd. {RandEmote()}");
+            var url = "http://multistre.am/crendor/";
+
+            foreach (var s in streamers)
+            {
+                url += s + "/";
+            }
+
+            client.SendMessage(GetChannel(e), $"Watch ALL of the nerds! " + url + $" {RandEmote()}");
         }
 
         async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
