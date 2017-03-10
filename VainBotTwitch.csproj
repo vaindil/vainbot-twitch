@@ -108,10 +108,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\LogEntry.cs" />
     <Compile Include="Classes\MultiStreamer.cs" />
     <Compile Include="Classes\OpenWeatherMapResponse.cs" />
     <Compile Include="Classes\SlothyRecord.cs" />
     <Compile Include="Classes\WowToken.cs" />
+    <Compile Include="DbConfigs\LogEntryConfig.cs" />
     <Compile Include="DbConfigs\MultiStreamerConfig.cs" />
     <Compile Include="DbConfigs\SlothyRecordConfig.cs" />
     <Compile Include="Program.cs" />

@@ -12,11 +12,13 @@ namespace VainBotTwitch
 
         public virtual DbSet<SlothyRecord> Slothies { get; set; }
         public virtual DbSet<MultiStreamer> MultiStreamers { get; set; }
+        public virtual DbSet<LogEntry> LogEntries { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             modelBuilder.Configurations.Add(new SlothyRecordConfig());
             modelBuilder.Configurations.Add(new MultiStreamerConfig());
+            modelBuilder.Configurations.Add(new LogEntryConfig());
         }
     }
 }

@@ -61,6 +61,10 @@ namespace VainBotTwitch
 
             client.AddChatCommandIdentifier('!');
 
+            client.OnConnected += ConnectedLog;
+            client.OnDisconnected += DisconnectedLog;
+            client.OnConnectionError += ConnectionErrorLog;
+
             client.OnChatCommandReceived += CommandHandler;
 
             var throttler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
@@ -72,6 +76,27 @@ namespace VainBotTwitch
             {
                 Thread.Sleep(1000);
             }
+        }
+
+        async void ConnectedLog(object sender, OnConnectedArgs e)
+        {
+            var entry = new LogEntry($"Connected. Username: {e.Username} | Joined: {e.AutoJoinChannel}");
+
+            await LogToDb(entry);
+        }
+
+        async void DisconnectedLog(object sender, OnDisconnectedArgs e)
+        {
+            var entry = new LogEntry($"Disconnected. Username: {e.Username}");
+
+            await LogToDb(entry);
+        }
+
+        async void ConnectionErrorLog(object sender, OnConnectionErrorArgs e)
+        {
+            var entry = new LogEntry($"Connection error. Username: {e.Username}");
+
+            await LogToDb(entry);
         }
 
         async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
@@ -325,6 +350,15 @@ namespace VainBotTwitch
 
             client.SendMessage(channel, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
                 $"{weather.Weather[0].Description}, {temp}° F {RandEmote()}");
+        }
+
+        async Task LogToDb(LogEntry entry)
+        {
+            using (var db = new VbContext())
+            {
+                db.LogEntries.Add(entry);
+                await db.SaveChangesAsync();
+            }
         }
 
         static List<string> _slothFacts = new List<string>
