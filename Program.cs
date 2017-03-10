@@ -120,6 +120,12 @@ namespace VainBotTwitch
                     await GetMultitwitch(sender, e);
                     return;
                 }
+
+                if (argCount != 0 && e.Command.ChatMessage.IsModerator)
+                {
+                    await UpdateMultitwitch(sender, e);
+                    return;
+                }
             }
         }
 
@@ -146,6 +152,46 @@ namespace VainBotTwitch
             }
 
             client.SendMessage(GetChannel(e), $"Watch ALL of the nerds! " + url + $" {RandEmote()}");
+        }
+
+        async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e)
+        {
+            if (e.Command.ArgumentsAsList.Count == 1 && e.Command.ArgumentsAsList[0].ToLower() == "clear")
+            {
+                using (var db = new VbContext())
+                {
+                    db.MultiStreamers.RemoveRange(db.MultiStreamers);
+                    await db.SaveChangesAsync();
+                }
+
+                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {RandEmote()}");
+                return;
+            }
+
+            var validUsernames = await TwitchApi.Users.GetUsersV5Async(e.Command.ArgumentsAsList);
+            if (validUsernames.Count != e.Command.ArgumentsAsList.Count)
+            {
+                client.SendMessage(GetChannel(e),
+                    $"At least one of those isn't a valid user, you nerd. {RandEmote()}");
+            }
+
+            using (var db = new VbContext())
+            {
+                db.MultiStreamers.RemoveRange(db.MultiStreamers);
+                await db.SaveChangesAsync();
+            }
+
+            using (var db = new VbContext())
+            {
+                foreach (var u in e.Command.ArgumentsAsList)
+                {
+                    db.MultiStreamers.Add(new MultiStreamer(u));
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+            await GetMultitwitch(sender, e);
         }
 
         async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
