@@ -427,7 +427,7 @@ namespace VainBotTwitch
             "StinkyCheese",
             "SwiftRage",
             "TakeNRG",
-            "TheIlliuminati",
+            "TheIlluminati",
             "VoHiYo",
             "WutFace"
         };
