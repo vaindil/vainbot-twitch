@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using TwitchLib;
+using TwitchLib.Events.Client;
+using TwitchLib.Models.Client;
 
 namespace VainBotTwitch
 {
     public static class Utils
     {
         static Random rng = new Random();
+
+        public static JoinedChannel GetChannel(this OnChatCommandReceivedArgs e, TwitchClient client)
+        {
+            return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
+        }
 
         public static string ToDisplayString(this decimal count)
         {

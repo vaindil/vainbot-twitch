@@ -13,6 +13,7 @@ using TwitchLib.Events.Client;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
+using VainBotTwitch.Commands;
 
 namespace VainBotTwitch
 {
@@ -61,10 +62,10 @@ namespace VainBotTwitch
 
             client.AddChatCommandIdentifier('!');
 
-            client.OnConnected += ConnectedLog;
-            client.OnDisconnected += DisconnectedLog;
-            client.OnConnectionError += ConnectionErrorLog;
-            client.OnIncorrectLogin += IncorrectLoginLog;
+            client.OnConnected += LogEvents;
+            client.OnDisconnected += LogEvents;
+            client.OnConnectionError += LogEvents;
+            client.OnIncorrectLogin += LogEvents;
 
             client.OnChatCommandReceived += CommandHandler;
 
@@ -79,32 +80,37 @@ namespace VainBotTwitch
             }
         }
 
-        async void ConnectedLog(object sender, OnConnectedArgs e)
+        async void LogEvents(object sender, object args)
         {
-            var entry = new LogEntry($"Connected. Username: {e.Username} | Joined: {e.AutoJoinChannel}");
+            LogEntry entry;
 
-            await LogToDb(entry);
-        }
+            switch (args)
+            {
+                case OnConnectedArgs e:
+                    entry = new LogEntry($"Connected. Username: {e.Username} | Joined: {e.AutoJoinChannel}");
+                    break;
 
-        async void DisconnectedLog(object sender, OnDisconnectedArgs e)
-        {
-            var entry = new LogEntry($"Disconnected. Username: {e.Username}");
+                case OnDisconnectedArgs e:
+                    entry = new LogEntry($"Disconnected. Username: {e.Username}");
+                    break;
 
-            await LogToDb(entry);
-        }
+                case OnConnectionErrorArgs e:
+                    entry = new LogEntry($"Connection error. Username: {e.Username}");
+                    break;
 
-        async void ConnectionErrorLog(object sender, OnConnectionErrorArgs e)
-        {
-            var entry = new LogEntry($"Connection error. Username: {e.Username}");
+                case OnIncorrectLoginArgs e:
+                    entry = new LogEntry($"Incorrect login. Error: {e.Exception.Message}");
+                    break;
 
-            await LogToDb(entry);
-        }
+                default:
+                    return;
+            }
 
-        async void IncorrectLoginLog(object sender, OnIncorrectLoginArgs e)
-        {
-            var entry = new LogEntry($"Incorrect login. Error: {e.Exception.Message}");
-
-            await LogToDb(entry);
+            using (var db = new VbContext())
+            {
+                db.LogEntries.Add(entry);
+                await db.SaveChangesAsync();
+            }
         }
 
         async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
@@ -138,7 +144,7 @@ namespace VainBotTwitch
 
                 if (argCount > 0 && e.Command.ArgumentsAsList[0].ToLower() == "help")
                 {
-                    client.SendMessage(GetChannel(e), "Slothies are a made-up points system. " +
+                    client.SendMessage(e.GetChannel(client), "Slothies are a made-up points system. " +
                         "They give you nothing other than bragging rights. Use !slothies to check how " +
                         $"many you have. {Utils.RandEmote()}");
 
@@ -151,7 +157,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                client.SendMessage(GetChannel(e), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
+                client.SendMessage(e.GetChannel(client), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
                 return;
             }
             
@@ -159,7 +165,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await GetMultitwitch(sender, e);
+                    await MultitwitchCommand.GetMultitwitch(sender, e);
                     return;
                 }
 
@@ -167,12 +173,12 @@ namespace VainBotTwitch
                 {
                     if (!e.Command.ChatMessage.IsModerator)
                     {
-                        client.SendMessage(GetChannel(e), "See who the nerd is playing with and " +
+                        client.SendMessage(e.GetChannel(client), "See who the nerd is playing with and " +
                             $"watch them all together using !multi. {Utils.RandEmote()}");
                     }
                     else
                     {
-                        client.SendMessage(GetChannel(e), $"{Utils.RandEmote()} Mods: Clear the multi " +
+                        client.SendMessage(e.GetChannel(client), $"{Utils.RandEmote()} Mods: Clear the multi " +
                             "link using !multi clear. " +
                             "Set streamers by providing a list. For example: !multi gmart strippin");
                     }
@@ -184,80 +190,15 @@ namespace VainBotTwitch
                     && e.Command.ArgumentsAsList[0].ToLower() != "help"
                     && e.Command.ChatMessage.IsModerator)
                 {
-                    await UpdateMultitwitch(sender, e);
+                    await MultitwitchCommand.UpdateMultitwitch(sender, e);
                     return;
                 }
             }
         }
 
-        async Task GetMultitwitch(object sender, OnChatCommandReceivedArgs e)
-        {
-            List<string> streamers;
-
-            using (var db = new VbContext())
-            {
-                streamers = await db.MultiStreamers.Select(s => s.Username).ToListAsync();
-            }
-
-            if (streamers.Count == 0)
-            {
-                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
-                return;
-            }
-
-            var url = "http://multistre.am/crendor/";
-
-            foreach (var s in streamers)
-            {
-                url += s + "/";
-            }
-
-            client.SendMessage(GetChannel(e), $"Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
-        }
-
-        async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e)
-        {
-            if (e.Command.ArgumentsAsList.Count == 1 && e.Command.ArgumentsAsList[0].ToLower() == "clear")
-            {
-                using (var db = new VbContext())
-                {
-                    db.MultiStreamers.RemoveRange(db.MultiStreamers);
-                    await db.SaveChangesAsync();
-                }
-
-                client.SendMessage(GetChannel(e), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
-                return;
-            }
-
-            var validUsernames = await TwitchApi.Users.GetUsersV5Async(e.Command.ArgumentsAsList);
-            if (validUsernames.Count != e.Command.ArgumentsAsList.Count)
-            {
-                client.SendMessage(GetChannel(e),
-                    $"At least one of those isn't a valid user, you nerd. {Utils.RandEmote()}");
-            }
-
-            using (var db = new VbContext())
-            {
-                db.MultiStreamers.RemoveRange(db.MultiStreamers);
-                await db.SaveChangesAsync();
-            }
-
-            using (var db = new VbContext())
-            {
-                foreach (var u in e.Command.ArgumentsAsList)
-                {
-                    db.MultiStreamers.Add(new MultiStreamer(u));
-                }
-
-                await db.SaveChangesAsync();
-            }
-
-            await GetMultitwitch(sender, e);
-        }
-
         async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
         {
-            var channel = GetChannel(e);
+            var channel = e.GetChannel(client);
             var count = 0M;
 
             using (var db = new VbContext())
@@ -273,7 +214,7 @@ namespace VainBotTwitch
 
         async Task UpdateSlothies(object sender, OnChatCommandReceivedArgs e)
         {
-            var channel = GetChannel(e);
+            var channel = e.GetChannel(client);
 
             var username = e.Command.ArgumentsAsList[0].ToLower().TrimStart('@');
             if (username.Length >= 200)
@@ -352,14 +293,13 @@ namespace VainBotTwitch
         void SlothFacts(object sender, OnChatCommandReceivedArgs e)
         {
             var i = rng.Next(0, _slothFacts.Count);
-            var channel = GetChannel(e);
 
-            client.SendMessage(channel, _slothFacts[i]);
+            client.SendMessage(e.GetChannel(client), _slothFacts[i]);
         }
 
         async Task WoppyWeather(object sender, OnChatCommandReceivedArgs e)
         {
-            var channel = GetChannel(e);
+            var channel = e.GetChannel(client);
 
             if (e.Command.ArgumentsAsList.Count > 0
                 && e.Command.ArgumentsAsList[0].ToLower() == "help")
@@ -400,15 +340,6 @@ namespace VainBotTwitch
                 $"{weather.Weather[0].Description}, {temp}° F {Utils.RandEmote()}");
         }
 
-        async Task LogToDb(LogEntry entry)
-        {
-            using (var db = new VbContext())
-            {
-                db.LogEntries.Add(entry);
-                await db.SaveChangesAsync();
-            }
-        }
-
         static List<string> _slothFacts = new List<string>
         {
             "Sloths can sometimes maintain their grasp on limbs after death.",
@@ -443,14 +374,5 @@ namespace VainBotTwitch
             "Sloths sometimes fatally mistake powerlines for trees. BibleThump",
             "Sloths tend to prefer the leaves of the Cecropia tree, sometimes known as pumpwoods."
         };
-
-        
-
-        JoinedChannel GetChannel(OnChatCommandReceivedArgs e)
-        {
-            return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
-        }
-
-        
     }
 }
