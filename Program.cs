@@ -215,8 +215,9 @@ namespace VainBotTwitch
         async Task UpdateSlothies(object sender, OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(client);
+            var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
 
-            var username = e.Command.ArgumentsAsList[0].ToLower().TrimStart('@');
+            var username = origUsername.ToLower();
             if (username.Length >= 200)
             {
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
@@ -287,7 +288,7 @@ namespace VainBotTwitch
                 await db.SaveChangesAsync();
             }
 
-            client.SendMessage(channel, $"{username} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
+            client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
         void SlothFacts(object sender, OnChatCommandReceivedArgs e)
