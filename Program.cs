@@ -51,7 +51,7 @@ namespace VainBotTwitch
             if (openWeatherMapApiKey == null)
                 throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
 
-            client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
+            client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor", logging: true);
             TwitchApi.SetClientId(clientId);
 
             client.AddChatCommandIdentifier('!');
@@ -63,8 +63,7 @@ namespace VainBotTwitch
 
             client.OnChatCommandReceived += CommandHandler;
 
-            var throttler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
-            client.ChatThrottler = throttler;
+            client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
 
             client.Connect();
 
