@@ -8,7 +8,9 @@ namespace VainBotTwitch
     [DbConfigurationType(typeof(MySqlEFConfiguration))]
     public class VbContext : DbContext
     {
-        public VbContext() : base("name=VbContext") { }
+        public VbContext() : base("name=VbContext")
+        {
+        }
 
         public virtual DbSet<SlothyRecord> Slothies { get; set; }
         public virtual DbSet<MultiStreamer> MultiStreamers { get; set; }

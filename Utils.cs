@@ -8,7 +8,7 @@ namespace VainBotTwitch
 {
     public static class Utils
     {
-        static Random rng = new Random();
+        static readonly Random rng = new Random();
 
         public static JoinedChannel GetChannel(this OnChatCommandReceivedArgs e, TwitchClient client)
         {
@@ -43,7 +43,7 @@ namespace VainBotTwitch
             return _emotes[r];
         }
 
-        static List<string> _emotes = new List<string>
+        static readonly List<string> _emotes = new List<string>
         {
             "4Head",
             "BabyRage",

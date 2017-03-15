@@ -42,7 +42,8 @@ namespace VainBotTwitch.Commands
         {
             var client = (TwitchClient)sender;
 
-            if (e.Command.ArgumentsAsList.Count == 1 && e.Command.ArgumentsAsList[0].ToLower() == "clear")
+            if (e.Command.ArgumentsAsList.Count == 1
+                && string.Equals(e.Command.ArgumentsAsList[0], "clear", System.StringComparison.OrdinalIgnoreCase))
             {
                 using (var db = new VbContext())
                 {

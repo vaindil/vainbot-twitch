@@ -9,7 +9,7 @@ namespace VainBotTwitch.DbConfigs
         {
             ToTable("slothy_record");
             HasKey(r => r.UserId);
-            
+
             Property(r => r.UserId).HasColumnName("user_id");
             Property(r => r.Count).IsRequired().HasPrecision(8, 2);
         }

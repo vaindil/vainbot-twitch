@@ -2,7 +2,9 @@
 {
     public class MultiStreamer
     {
-        public MultiStreamer() { }
+        public MultiStreamer()
+        {
+        }
 
         public MultiStreamer(string un)
         {

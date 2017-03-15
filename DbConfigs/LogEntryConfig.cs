@@ -9,7 +9,7 @@ namespace VainBotTwitch.DbConfigs
         {
             ToTable("log_entry");
             HasKey(e => e.Id);
-            
+
             Property(e => e.Timestamp).IsRequired();
             Property(e => e.Message).IsRequired().HasMaxLength(2000);
         }

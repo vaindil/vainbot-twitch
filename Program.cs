@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data.Entity;
-using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -17,33 +15,29 @@ using VainBotTwitch.Commands;
 
 namespace VainBotTwitch
 {
-    class Program
+    internal class Program
     {
         static TwitchClient client;
-        static HttpClient httpClient = new HttpClient();
-        static Random rng = new Random();
-        static Regex validZip = new Regex(@"^[0-9]{5}$");
+        static readonly HttpClient httpClient = new HttpClient();
+        static readonly Random rng = new Random();
+        static readonly Regex validZip = new Regex(@"^[0-9]{5}$");
         static string openWeatherMapApiKey;
 
-        static void Main(string[] args) => new Program().Run();
+        private static void Main(string[] args) => new Program().Run();
 
         public void Run()
         {
-            var username = Environment.GetEnvironmentVariable("VB_TWITCH_USERNAME");
-            if (username == null)
-                username = ConfigurationManager.AppSettings["twitchUsername"];
+            var username = Environment.GetEnvironmentVariable("VB_TWITCH_USERNAME")
+                ?? ConfigurationManager.AppSettings["twitchUsername"];
 
-            var oauth = Environment.GetEnvironmentVariable("VB_TWITCH_OAUTH");
-            if (oauth == null)
-                oauth = ConfigurationManager.AppSettings["twitchOauth"];
+            var oauth = Environment.GetEnvironmentVariable("VB_TWITCH_OAUTH")
+                ?? ConfigurationManager.AppSettings["twitchOauth"];
 
-            var clientId = Environment.GetEnvironmentVariable("VB_TWITCH_CLIENT_ID");
-            if (clientId == null)
-                clientId = ConfigurationManager.AppSettings["twitchClientId"];
+            var clientId = Environment.GetEnvironmentVariable("VB_TWITCH_CLIENT_ID")
+                ?? ConfigurationManager.AppSettings["twitchClientId"];
 
-            openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY");
-            if (openWeatherMapApiKey == null)
-                openWeatherMapApiKey = ConfigurationManager.AppSettings["openWeatherMapApiKey"];
+            openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY")
+                ?? ConfigurationManager.AppSettings["openWeatherMapApiKey"];
 
             if (username == null)
                 throw new ArgumentNullException(nameof(username), "No Twitch username found");
@@ -120,7 +114,7 @@ namespace VainBotTwitch
 
             var command = e.Command.Command.ToLower();
             var argCount = e.Command.ArgumentsAsList.Count;
-            
+
             switch (command)
             {
                 case "slothfact":
@@ -133,7 +127,7 @@ namespace VainBotTwitch
                     await WoppyWeather(sender, e);
                     return;
             }
-            
+
             if (command == "slothy" || command == "slothies")
             {
                 if (argCount == 0)
@@ -142,7 +136,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                if (argCount > 0 && e.Command.ArgumentsAsList[0].ToLower() == "help")
+                if (argCount > 0 && string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.OrdinalIgnoreCase))
                 {
                     client.SendMessage(e.GetChannel(client), "Slothies are a made-up points system. " +
                         "They give you nothing other than bragging rights. Use !slothies to check how " +
@@ -160,7 +154,7 @@ namespace VainBotTwitch
                 client.SendMessage(e.GetChannel(client), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
                 return;
             }
-            
+
             if (command == "multi" || command == "multitwitch")
             {
                 if (argCount == 0)
@@ -169,7 +163,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                if (argCount > 0 && e.Command.ArgumentsAsList[0].ToLower() == "help")
+                if (argCount > 0 && string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!e.Command.ChatMessage.IsModerator)
                     {
@@ -187,7 +181,7 @@ namespace VainBotTwitch
                 }
 
                 if (argCount > 0
-                    && e.Command.ArgumentsAsList[0].ToLower() != "help"
+                    && !string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.CurrentCultureIgnoreCase)
                     && e.Command.ChatMessage.IsModerator)
                 {
                     await MultitwitchCommand.UpdateMultitwitch(sender, e);
@@ -303,7 +297,7 @@ namespace VainBotTwitch
             var channel = e.GetChannel(client);
 
             if (e.Command.ArgumentsAsList.Count > 0
-                && e.Command.ArgumentsAsList[0].ToLower() == "help")
+                && string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.OrdinalIgnoreCase))
             {
                 client.SendMessage(channel, "Woppy the weather bot can get your current weather. " +
                     "Use !woppy followed by a US zip code, for example !woppy 90210. Only works " +
@@ -341,7 +335,7 @@ namespace VainBotTwitch
                 $"{weather.Weather[0].Description}, {temp}° F {Utils.RandEmote()}");
         }
 
-        static List<string> _slothFacts = new List<string>
+        static readonly List<string> _slothFacts = new List<string>
         {
             "Sloths can sometimes maintain their grasp on limbs after death.",
             "Both two-toed and three-toed sloths grow to 1.5 to 2 feet long.",

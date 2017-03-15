@@ -4,7 +4,9 @@ namespace VainBotTwitch.Classes
 {
     public class LogEntry
     {
-        public LogEntry() { }
+        public LogEntry()
+        {
+        }
 
         public LogEntry(string message)
         {
