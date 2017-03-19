@@ -51,7 +51,7 @@ namespace VainBotTwitch
             if (openWeatherMapApiKey == null)
                 throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
 
-            client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor", logging: true);
+            client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
             TwitchApi.SetClientId(clientId);
 
             client.AddChatCommandIdentifier('!');
