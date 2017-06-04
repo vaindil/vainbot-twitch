@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
+using TwitchLib.Models.API;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
@@ -52,7 +53,8 @@ namespace VainBotTwitch
                 throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
 
             client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
-            TwitchApi.SetClientId(clientId);
+            TwitchAPI.Settings.ClientId = clientId;
+            TwitchAPI.Settings.AccessToken = oauth;
 
             client.AddChatCommandIdentifier('!');
 
@@ -216,16 +218,15 @@ namespace VainBotTwitch
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
-
-            var usernameList = new List<string> { username };
-            var users = await TwitchApi.Users.GetUsersV5Async(usernameList);
-            if (users.Count != 1)
+            
+            var users = await TwitchAPI.Users.v5.GetUserByName(username);
+            if (users.Total != 1)
             {
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
-            var userId = users[0].Id.ToString();
+            var userId = users.Matches[0].Id.ToString();
 
             if (userId == e.Command.ChatMessage.UserId)
             {
@@ -288,7 +289,7 @@ namespace VainBotTwitch
         {
             var i = rng.Next(0, _slothFacts.Count);
 
-            client.SendMessage(e.GetChannel(client), _slothFacts[i]);
+            client.SendMessage(_slothFacts[i]);
         }
 
         async Task WoppyWeather(object sender, OnChatCommandReceivedArgs e)

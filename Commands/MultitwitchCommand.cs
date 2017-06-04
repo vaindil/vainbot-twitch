@@ -55,8 +55,8 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var validUsernames = await TwitchApi.Users.GetUsersV5Async(e.Command.ArgumentsAsList);
-            if (validUsernames.Count != e.Command.ArgumentsAsList.Count)
+            var validUsernames = await TwitchAPI.Users.v5.GetUsersByName(e.Command.ArgumentsAsList);
+            if (validUsernames.Total != e.Command.ArgumentsAsList.Count)
             {
                 client.SendMessage(e.GetChannel(client),
                     $"At least one of those isn't a valid user, you nerd. {Utils.RandEmote()}");
