@@ -55,11 +55,33 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var validUsernames = await TwitchAPI.Users.v5.GetUsersByName(e.Command.ArgumentsAsList);
+            var streamers = e.Command.ArgumentsAsList
+                .Select(s => s.ToLower())
+                .Select(s => s.TrimStart('@'))
+                .Distinct()
+                .ToList();
+
+            var crendorRemoved = streamers.Remove("crendor");
+
+            if (streamers.Count == 0)
+            {
+                var msg = "You didn't specify any users, you nerd.";
+                if (crendorRemoved)
+                    msg += " Crendor is automatically added, so he doesn't count.";
+
+                msg += $" {Utils.RandEmote()}";
+
+                client.SendMessage(msg);
+                return;
+            }
+
+            var validUsernames = await TwitchAPI.Users.v5.GetUsersByName(streamers);
             if (validUsernames.Total != e.Command.ArgumentsAsList.Count)
             {
                 client.SendMessage(e.GetChannel(client),
                     $"At least one of those isn't a valid user, you nerd. {Utils.RandEmote()}");
+
+                return;
             }
 
             using (var db = new VbContext())
