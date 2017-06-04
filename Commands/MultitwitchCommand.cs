@@ -35,7 +35,7 @@ namespace VainBotTwitch.Commands
             }
 
             client.SendMessage(e.GetChannel(client),
-                               $"Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
+                               "Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
         }
 
         public static async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e)
@@ -92,7 +92,7 @@ namespace VainBotTwitch.Commands
 
             using (var db = new VbContext())
             {
-                foreach (var u in e.Command.ArgumentsAsList)
+                foreach (var u in streamers)
                 {
                     db.MultiStreamers.Add(new MultiStreamer(u));
                 }
