@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
-using TwitchLib.Models.API;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
@@ -21,7 +20,7 @@ namespace VainBotTwitch
         static TwitchClient client;
         static readonly HttpClient httpClient = new HttpClient();
         static readonly Random rng = new Random();
-        static readonly Regex validZip = new Regex(@"^[0-9]{5}$");
+        static readonly Regex validZip = new Regex("^[0-9]{5}$");
         static string openWeatherMapApiKey;
 
         private static void Main(string[] args) => new Program().Run();
@@ -58,11 +57,6 @@ namespace VainBotTwitch
 
             client.AddChatCommandIdentifier('!');
 
-            client.OnConnected += LogEvents;
-            client.OnDisconnected += LogEvents;
-            client.OnConnectionError += LogEvents;
-            client.OnIncorrectLogin += LogEvents;
-
             client.OnChatCommandReceived += CommandHandler;
 
             client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
@@ -72,39 +66,6 @@ namespace VainBotTwitch
             while (true)
             {
                 Thread.Sleep(1000);
-            }
-        }
-
-        async void LogEvents(object sender, object args)
-        {
-            LogEntry entry;
-
-            switch (args)
-            {
-                case OnConnectedArgs e:
-                    entry = new LogEntry($"Connected. Username: {e.Username} | Joined: {e.AutoJoinChannel}");
-                    break;
-
-                case OnDisconnectedArgs e:
-                    entry = new LogEntry($"Disconnected. Username: {e.Username}");
-                    break;
-
-                case OnConnectionErrorArgs e:
-                    entry = new LogEntry($"Connection error. Username: {e.Username}");
-                    break;
-
-                case OnIncorrectLoginArgs e:
-                    entry = new LogEntry($"Incorrect login. Error: {e.Exception.Message}");
-                    break;
-
-                default:
-                    return;
-            }
-
-            using (var db = new VbContext())
-            {
-                db.LogEntries.Add(entry);
-                await db.SaveChangesAsync();
             }
         }
 
@@ -218,7 +179,7 @@ namespace VainBotTwitch
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
-            
+
             var users = await TwitchAPI.Users.v5.GetUserByName(username);
             if (users.Total != 1)
             {
@@ -226,7 +187,7 @@ namespace VainBotTwitch
                 return;
             }
 
-            var userId = users.Matches[0].Id.ToString();
+            var userId = users.Matches[0].Id;
 
             if (userId == e.Command.ChatMessage.UserId)
             {
