@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
+using TwitchLib.Events.PubSub;
+using TwitchLib.Extensions.Client;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
@@ -18,9 +20,11 @@ namespace VainBotTwitch
     internal class Program
     {
         static TwitchClient client;
+        static readonly TwitchPubSub pubSub = new TwitchPubSub();
         static readonly HttpClient httpClient = new HttpClient();
         static readonly Random rng = new Random();
         static readonly Regex validZip = new Regex("^[0-9]{5}$");
+        static string oAuth;
         static string openWeatherMapApiKey;
 
         private static void Main(string[] args) => new Program().Run();
@@ -30,7 +34,7 @@ namespace VainBotTwitch
             var username = Environment.GetEnvironmentVariable("VB_TWITCH_USERNAME")
                 ?? ConfigurationManager.AppSettings["twitchUsername"];
 
-            var oauth = Environment.GetEnvironmentVariable("VB_TWITCH_OAUTH")
+            oAuth = Environment.GetEnvironmentVariable("VB_TWITCH_OAUTH")
                 ?? ConfigurationManager.AppSettings["twitchOauth"];
 
             var clientId = Environment.GetEnvironmentVariable("VB_TWITCH_CLIENT_ID")
@@ -42,8 +46,8 @@ namespace VainBotTwitch
             if (username == null)
                 throw new ArgumentNullException(nameof(username), "No Twitch username found");
 
-            if (oauth == null)
-                throw new ArgumentNullException(nameof(oauth), "No Twitch OAuth token found");
+            if (oAuth == null)
+                throw new ArgumentNullException(nameof(oAuth), "No Twitch OAuth token found");
 
             if (clientId == null)
                 throw new ArgumentNullException(nameof(clientId), "No Twitch client ID found");
@@ -51,9 +55,13 @@ namespace VainBotTwitch
             if (openWeatherMapApiKey == null)
                 throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
 
-            client = new TwitchClient(new ConnectionCredentials(username, oauth), "crendor");
+            client = new TwitchClient(new ConnectionCredentials(username, oAuth), "crendor");
             TwitchAPI.Settings.ClientId = clientId;
-            TwitchAPI.Settings.AccessToken = oauth;
+            TwitchAPI.Settings.AccessToken = oAuth;
+
+            pubSub.OnPubSubServiceConnected += OnPubSubConnected;
+            pubSub.OnUnban += OnPubSubUnban;
+            pubSub.OnBan += OnPubSubBan;
 
             client.AddChatCommandIdentifier('!');
 
@@ -62,6 +70,7 @@ namespace VainBotTwitch
             client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
 
             client.Connect();
+            pubSub.Connect();
 
             while (true)
             {
@@ -149,6 +158,71 @@ namespace VainBotTwitch
                     await MultitwitchCommand.UpdateMultitwitch(sender, e);
                     return;
                 }
+            }
+        }
+
+        async void ElenaHandler(object sender, OnMessageReceivedArgs e)
+        {
+            var user = e.ChatMessage.Username.ToLowerInvariant();
+            if (!user.Contains("elena"))
+                return;
+
+            using (var db = new VbContext())
+            {
+                var allowedExists = await db.AllowedElenas.FindAsync(user);
+                if (allowedExists != null)
+                    return;
+            }
+
+            client.BanUser(client.GetJoinedChannel(e.ChatMessage.Channel), user, "Check your whispers.");
+            client.SendWhisper(user, "You've been banned from Crendor's chat. " +
+                "We've had some bad luck with a bot that uses the name elena in all of its accounts. " +
+                "We now have to ban all accounts with elena in their name. If you're not a bot, message a mod " +
+                "and we'll let you through. Sorry about that!");
+        }
+
+        void OnPubSubConnected(object sender, object e)
+        {
+            pubSub.ListenToChatModeratorActions(147306836, 7555574, oAuth);
+        }
+
+        async void OnPubSubUnban(object sender, OnUnbanArgs e)
+        {
+            var user = e.UnbannedUser.ToLowerInvariant();
+            if (!user.Contains("elena"))
+                return;
+
+            using (var db = new VbContext())
+            {
+                var existing = await db.AllowedElenas.FindAsync(user);
+                if (existing != null)
+                    return;
+
+                db.AllowedElenas.Add(new AllowedElena
+                {
+                    Username = user,
+                    UnbannedBy = e.UnbannedBy.ToLowerInvariant(),
+                    UnbannedAt = DateTime.UtcNow
+                });
+
+                await db.SaveChangesAsync();
+            }
+        }
+
+        async void OnPubSubBan(object sender, OnBanArgs e)
+        {
+            var user = e.BannedUser.ToLowerInvariant();
+            if (!user.Contains("elena"))
+                return;
+
+            using (var db = new VbContext())
+            {
+                var existing = await db.AllowedElenas.FindAsync(user);
+                if (existing == null)
+                    return;
+
+                db.AllowedElenas.Remove(existing);
+                await db.SaveChangesAsync();
             }
         }
 
@@ -274,7 +348,7 @@ namespace VainBotTwitch
             }
 
             var response = await httpClient
-                .GetAsync($"http://api.openweathermap.org/data/2.5/weather?" +
+                .GetAsync("http://api.openweathermap.org/data/2.5/weather?" +
                 $"zip={e.Command.ArgumentsAsString},us&APPID={openWeatherMapApiKey}");
 
             var respString = await response.Content.ReadAsStringAsync();
