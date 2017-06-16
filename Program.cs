@@ -66,6 +66,7 @@ namespace VainBotTwitch
             client.AddChatCommandIdentifier('!');
 
             client.OnChatCommandReceived += CommandHandler;
+            client.OnMessageReceived += ElenaHandler;
 
             client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
 
