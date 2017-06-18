@@ -175,7 +175,9 @@ namespace VainBotTwitch
                     return;
             }
 
-            client.BanUser(client.GetJoinedChannel(e.ChatMessage.Channel), user, "Check your whispers.");
+            await Task.Delay(1000).ContinueWith(x =>
+                client.BanUser(client.GetJoinedChannel(e.ChatMessage.Channel), user, "Check your whispers."));
+
             client.SendWhisper(user, "You've been banned from Crendor's chat. " +
                 "We've had some bad luck with a bot that uses the name elena in all of its accounts. " +
                 "We now have to ban all accounts with elena in their name. If you're not a bot, message a mod " +
