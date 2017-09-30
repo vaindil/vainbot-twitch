@@ -75,7 +75,7 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var validUsernames = await TwitchAPI.Users.v5.GetUsersByName(streamers);
+            var validUsernames = await TwitchAPI.Users.v5.GetUsersByNameAsync(streamers);
             if (validUsernames.Total != streamers.Count)
             {
                 client.SendMessage(e.GetChannel(client),

@@ -69,7 +69,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Private>False</Private>
@@ -104,8 +104,8 @@
     <Reference Include="System.Xml">
       <Private>False</Private>
     </Reference>
-    <Reference Include="TwitchLib, Version=1.5.2.39613, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\TwitchLib.1.5.2\lib\net45\TwitchLib.dll</HintPath>
+    <Reference Include="TwitchLib, Version=1.5.5.35130, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\TwitchLib.1.5.6\lib\net45\TwitchLib.dll</HintPath>
     </Reference>
     <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
       <HintPath>packages\WebSocketSharp-NonPreRelease.1.0.0\lib\net35\websocket-sharp.dll</HintPath>
@@ -113,14 +113,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Classes\AllowedElena.cs" />
     <Compile Include="Classes\LogEntry.cs" />
     <Compile Include="Classes\MultiStreamer.cs" />
     <Compile Include="Classes\OpenWeatherMapResponse.cs" />
+    <Compile Include="Classes\QuoteRecord.cs" />
     <Compile Include="Classes\SlothyRecord.cs" />
     <Compile Include="Classes\WowToken.cs" />
     <Compile Include="Commands\MultitwitchCommand.cs" />
-    <Compile Include="DbConfigs\AllowedElenaConfig.cs" />
+    <Compile Include="Commands\QuoteCommand.cs" />
+    <Compile Include="DbConfigs\QuoteRecordConfig.cs" />
     <Compile Include="DbConfigs\LogEntryConfig.cs" />
     <Compile Include="DbConfigs\MultiStreamerConfig.cs" />
     <Compile Include="DbConfigs\SlothyRecordConfig.cs" />

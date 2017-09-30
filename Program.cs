@@ -8,8 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
-using TwitchLib.Events.PubSub;
-using TwitchLib.Extensions.Client;
 using TwitchLib.Models.Client;
 using TwitchLib.Services;
 using VainBotTwitch.Classes;
@@ -20,7 +18,6 @@ namespace VainBotTwitch
     internal class Program
     {
         static TwitchClient client;
-        static readonly TwitchPubSub pubSub = new TwitchPubSub();
         static readonly HttpClient httpClient = new HttpClient();
         static readonly Random rng = new Random();
         static readonly Regex validZip = new Regex("^[0-9]{5}$");
@@ -59,19 +56,13 @@ namespace VainBotTwitch
             TwitchAPI.Settings.ClientId = clientId;
             TwitchAPI.Settings.AccessToken = oAuth;
 
-            pubSub.OnPubSubServiceConnected += OnPubSubConnected;
-            pubSub.OnUnban += OnPubSubUnban;
-            pubSub.OnBan += OnPubSubBan;
-
             client.AddChatCommandIdentifier('!');
 
             client.OnChatCommandReceived += CommandHandler;
-            client.OnMessageReceived += ElenaHandler;
 
             client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
 
             client.Connect();
-            pubSub.Connect();
 
             while (true)
             {
@@ -98,6 +89,18 @@ namespace VainBotTwitch
                 case "weather":
                     await WoppyWeather(sender, e);
                     return;
+            }
+
+            if (command == "quote" || command == "quotes")
+            {
+                if (argCount > 0 && e.Command.ChatMessage.IsModerator)
+                {
+                    await QuoteCommand.AddQuoteAsync(sender, e);
+                    return;
+                }
+
+                await QuoteCommand.GetQuoteAsync(sender, e, rng);
+                return;
             }
 
             if (command == "slothy" || command == "slothies")
@@ -162,73 +165,6 @@ namespace VainBotTwitch
             }
         }
 
-        async void ElenaHandler(object sender, OnMessageReceivedArgs e)
-        {
-            var user = e.ChatMessage.Username.ToLowerInvariant();
-            if (!user.Contains("elena"))
-                return;
-
-            using (var db = new VbContext())
-            {
-                var allowedExists = await db.AllowedElenas.FindAsync(user);
-                if (allowedExists != null)
-                    return;
-            }
-
-            await Task.Delay(1000).ContinueWith(x =>
-                client.BanUser(client.GetJoinedChannel(e.ChatMessage.Channel), user, "Check your whispers."));
-
-            client.SendWhisper(user, "You've been banned from Crendor's chat. " +
-                "We've had some bad luck with a bot that uses the name elena in all of its accounts. " +
-                "We now have to ban all accounts with elena in their name. If you're not a bot, message a mod " +
-                "and we'll let you through. Sorry about that!");
-        }
-
-        void OnPubSubConnected(object sender, object e)
-        {
-            pubSub.ListenToChatModeratorActions(147306836, 7555574, oAuth);
-        }
-
-        async void OnPubSubUnban(object sender, OnUnbanArgs e)
-        {
-            var user = e.UnbannedUser.ToLowerInvariant();
-            if (!user.Contains("elena"))
-                return;
-
-            using (var db = new VbContext())
-            {
-                var existing = await db.AllowedElenas.FindAsync(user);
-                if (existing != null)
-                    return;
-
-                db.AllowedElenas.Add(new AllowedElena
-                {
-                    Username = user,
-                    UnbannedBy = e.UnbannedBy.ToLowerInvariant(),
-                    UnbannedAt = DateTime.UtcNow
-                });
-
-                await db.SaveChangesAsync();
-            }
-        }
-
-        async void OnPubSubBan(object sender, OnBanArgs e)
-        {
-            var user = e.BannedUser.ToLowerInvariant();
-            if (!user.Contains("elena"))
-                return;
-
-            using (var db = new VbContext())
-            {
-                var existing = await db.AllowedElenas.FindAsync(user);
-                if (existing == null)
-                    return;
-
-                db.AllowedElenas.Remove(existing);
-                await db.SaveChangesAsync();
-            }
-        }
-
         async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(client);
@@ -257,7 +193,7 @@ namespace VainBotTwitch
                 return;
             }
 
-            var users = await TwitchAPI.Users.v5.GetUserByName(username);
+            var users = await TwitchAPI.Users.v5.GetUserByNameAsync(username);
             if (users.Total != 1)
             {
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
