@@ -75,7 +75,7 @@ namespace VainBotTwitch
             if (e.Command.ChatMessage.BotUsername == e.Command.ChatMessage.Username)
                 return;
 
-            var command = e.Command.Command.ToLower();
+            var command = e.Command.CommandText.ToLower();
             var argCount = e.Command.ArgumentsAsList.Count;
 
             switch (command)
