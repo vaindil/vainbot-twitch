@@ -91,17 +91,17 @@ namespace VainBotTwitch
                     return;
             }
 
-            //if (command == "quote" || command == "quotes")
-            //{
-            //    if (argCount > 0 && e.Command.ChatMessage.IsModerator)
-            //    {
-            //        await QuoteCommand.AddQuoteAsync(sender, e);
-            //        return;
-            //    }
+            if (command == "quote" || command == "quotes")
+            {
+                if (argCount > 0 && e.Command.ChatMessage.IsModerator)
+                {
+                    await QuoteCommand.AddQuoteAsync(sender, e);
+                    return;
+                }
 
-            //    await QuoteCommand.GetQuoteAsync(sender, e, rng);
-            //    return;
-            //}
+                await QuoteCommand.GetQuoteAsync(sender, e, rng);
+                return;
+            }
 
             if (command == "slothy" || command == "slothies")
             {

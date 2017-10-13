@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.Entity;
+using System.Linq;
 using System.Threading.Tasks;
 using TwitchLib;
 using TwitchLib.Events.Client;
@@ -17,8 +18,11 @@ namespace VainBotTwitch.Commands
             using (var db = new VbContext())
             {
                 var count = await db.Quotes.CountAsync();
-                var quoteId = rng.Next(count);
-                quote = await db.Quotes.FindAsync(quoteId + 1);
+                quote = await db.Quotes
+                    .OrderBy(q => q.Id)
+                    .Skip(rng.Next(count))
+                    .Take(1)
+                    .FirstAsync();
             }
 
             client.SendMessage(e.GetChannel(client), $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}");
