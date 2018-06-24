@@ -1,9 +1,9 @@
-﻿using System;
-using System.Data.Entity;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using TwitchLib;
-using TwitchLib.Events.Client;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
 using VainBotTwitch.Classes;
 
 namespace VainBotTwitch.Commands
@@ -22,10 +22,13 @@ namespace VainBotTwitch.Commands
                     .OrderBy(q => q.Id)
                     .Skip(rng.Next(count))
                     .Take(1)
-                    .FirstAsync();
+                    .FirstOrDefaultAsync();
             }
 
-            client.SendMessage(e.GetChannel(client), $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}");
+            if (quote == null)
+                client.SendMessage("vaindil", "No quotes have been added. Yell at the mods.");
+            else
+                client.SendMessage(e.GetChannel(client), $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}");
         }
 
         public static async Task AddQuoteAsync(object sender, OnChatCommandReceivedArgs e)

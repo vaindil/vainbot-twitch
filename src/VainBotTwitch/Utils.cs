@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using TwitchLib;
-using TwitchLib.Events.Client;
-using TwitchLib.Models.Client;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
 
 namespace VainBotTwitch
 {

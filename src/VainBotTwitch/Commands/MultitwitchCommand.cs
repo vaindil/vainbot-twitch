@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Data.Entity;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TwitchLib;
-using TwitchLib.Events.Client;
+using TwitchLib.Api;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
 using VainBotTwitch.Classes;
 
 namespace VainBotTwitch.Commands
@@ -38,7 +39,7 @@ namespace VainBotTwitch.Commands
                                "Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
         }
 
-        public static async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e)
+        public static async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e, TwitchAPI api)
         {
             var client = (TwitchClient)sender;
 
@@ -48,7 +49,7 @@ namespace VainBotTwitch.Commands
                 using (var db = new VbContext())
                 {
                     db.MultiStreamers.RemoveRange(db.MultiStreamers);
-                    await db.SaveChangesAsync();
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
 
                 client.SendMessage(e.GetChannel(client), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
@@ -71,11 +72,11 @@ namespace VainBotTwitch.Commands
 
                 msg += $" {Utils.RandEmote()}";
 
-                client.SendMessage(msg);
+                client.SendMessage(e.GetChannel(client), msg);
                 return;
             }
 
-            var validUsernames = await TwitchAPI.Users.v5.GetUsersByNameAsync(streamers);
+            var validUsernames = await api.Users.v5.GetUsersByNameAsync(streamers);
             if (validUsernames.Total != streamers.Count)
             {
                 client.SendMessage(e.GetChannel(client),

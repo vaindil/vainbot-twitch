@@ -1,15 +1,16 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using TwitchLib;
-using TwitchLib.Events.Client;
-using TwitchLib.Models.Client;
-using TwitchLib.Services;
+using TwitchLib.Api;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
+using TwitchLib.Client.Services;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
 
@@ -17,50 +18,30 @@ namespace VainBotTwitch
 {
     internal class Program
     {
-        static TwitchClient client;
-        static readonly HttpClient httpClient = new HttpClient();
-        static readonly Random rng = new Random();
-        static readonly Regex validZip = new Regex("^[0-9]{5}$");
-        static string oAuth;
-        static string openWeatherMapApiKey;
+        private static IConfiguration config;
+        private static TwitchClient client;
+        private static TwitchAPI api;
+        private static readonly HttpClient httpClient = new HttpClient();
+        private static readonly Random rng = new Random();
+        private static readonly Regex validZip = new Regex("^[0-9]{5}$");
 
-        private static void Main(string[] args) => new Program().Run();
+        private static void Main() => new Program().Run();
 
         public void Run()
         {
-            var username = Environment.GetEnvironmentVariable("VB_TWITCH_USERNAME")
-                ?? ConfigurationManager.AppSettings["twitchUsername"];
+            config = new ConfigurationBuilder()
+                .AddJsonFile("config.json")
+                .Build();
 
-            oAuth = Environment.GetEnvironmentVariable("VB_TWITCH_OAUTH")
-                ?? ConfigurationManager.AppSettings["twitchOauth"];
-
-            var clientId = Environment.GetEnvironmentVariable("VB_TWITCH_CLIENT_ID")
-                ?? ConfigurationManager.AppSettings["twitchClientId"];
-
-            openWeatherMapApiKey = Environment.GetEnvironmentVariable("VB_OPENWEATHERMAP_API_KEY")
-                ?? ConfigurationManager.AppSettings["openWeatherMapApiKey"];
-
-            if (username == null)
-                throw new ArgumentNullException(nameof(username), "No Twitch username found");
-
-            if (oAuth == null)
-                throw new ArgumentNullException(nameof(oAuth), "No Twitch OAuth token found");
-
-            if (clientId == null)
-                throw new ArgumentNullException(nameof(clientId), "No Twitch client ID found");
-
-            if (openWeatherMapApiKey == null)
-                throw new ArgumentNullException(nameof(openWeatherMapApiKey), "No OpenWeatherMap API key found");
-
-            client = new TwitchClient(new ConnectionCredentials(username, oAuth), "crendor");
-            TwitchAPI.Settings.ClientId = clientId;
-            TwitchAPI.Settings.AccessToken = oAuth;
+            api = new TwitchAPI();
+            api.Settings.ClientId = config["twitchClientId"];
+            api.Settings.AccessToken = config["twitchOauth"];
+            client = new TwitchClient();
+            client.Initialize(new ConnectionCredentials(config["twitchUsername"], config["twitchOauth"]), config["twitchChannel"]);
 
             client.AddChatCommandIdentifier('!');
-
             client.OnChatCommandReceived += CommandHandler;
-
-            client.ChatThrottler = new MessageThrottler(2, new TimeSpan(0, 0, 5));
+            //client.ChatThrottler = new MessageThrottler(client, 2, new TimeSpan(0, 0, 5));
 
             client.Connect();
 
@@ -70,7 +51,7 @@ namespace VainBotTwitch
             }
         }
 
-        async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
+        private async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
         {
             if (e.Command.ChatMessage.BotUsername == e.Command.ChatMessage.Username)
                 return;
@@ -82,12 +63,12 @@ namespace VainBotTwitch
             {
                 case "slothfact":
                 case "slothfacts":
-                    SlothFacts(sender, e);
+                    SlothFacts(e.GetChannel(client));
                     return;
 
                 case "woppy":
                 case "weather":
-                    await WoppyWeather(sender, e);
+                    await WoppyWeather(e).ConfigureAwait(false);
                     return;
             }
 
@@ -95,11 +76,11 @@ namespace VainBotTwitch
             {
                 if (argCount > 0 && e.Command.ChatMessage.IsModerator)
                 {
-                    await QuoteCommand.AddQuoteAsync(sender, e);
+                    await QuoteCommand.AddQuoteAsync(sender, e).ConfigureAwait(false);
                     return;
                 }
 
-                await QuoteCommand.GetQuoteAsync(sender, e, rng);
+                await QuoteCommand.GetQuoteAsync(sender, e, rng).ConfigureAwait(false);
                 return;
             }
 
@@ -107,7 +88,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await GetSlothies(sender, e);
+                    await GetSlothies(e).ConfigureAwait(false);
                     return;
                 }
 
@@ -122,7 +103,7 @@ namespace VainBotTwitch
 
                 if (argCount == 2)
                 {
-                    await UpdateSlothies(sender, e);
+                    await UpdateSlothies(e).ConfigureAwait(false);
                     return;
                 }
 
@@ -134,7 +115,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await MultitwitchCommand.GetMultitwitch(sender, e);
+                    await MultitwitchCommand.GetMultitwitch(sender, e).ConfigureAwait(false);
                     return;
                 }
 
@@ -159,20 +140,20 @@ namespace VainBotTwitch
                     && !string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.CurrentCultureIgnoreCase)
                     && e.Command.ChatMessage.IsModerator)
                 {
-                    await MultitwitchCommand.UpdateMultitwitch(sender, e);
+                    await MultitwitchCommand.UpdateMultitwitch(sender, e, api).ConfigureAwait(false);
                     return;
                 }
             }
         }
 
-        async Task GetSlothies(object sender, OnChatCommandReceivedArgs e)
+        private async Task GetSlothies(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(client);
             var count = 0M;
 
             using (var db = new VbContext())
             {
-                var record = await db.Slothies.FindAsync(e.Command.ChatMessage.UserId);
+                var record = await db.Slothies.FindAsync(e.Command.ChatMessage.UserId).ConfigureAwait(false);
                 if (record != null)
                     count = record.Count;
             }
@@ -181,7 +162,7 @@ namespace VainBotTwitch
                 channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
-        async Task UpdateSlothies(object sender, OnChatCommandReceivedArgs e)
+        private async Task UpdateSlothies(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(client);
             var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
@@ -193,7 +174,7 @@ namespace VainBotTwitch
                 return;
             }
 
-            var users = await TwitchAPI.Users.v5.GetUserByNameAsync(username);
+            var users = await api.Users.v5.GetUserByNameAsync(username).ConfigureAwait(false);
             if (users.Total != 1)
             {
                 client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
@@ -231,7 +212,7 @@ namespace VainBotTwitch
 
             using (var db = new VbContext())
             {
-                var record = await db.Slothies.FindAsync(userId);
+                var record = await db.Slothies.FindAsync(userId).ConfigureAwait(false);
                 if (record == null)
                 {
                     var newRecord = new SlothyRecord
@@ -253,20 +234,20 @@ namespace VainBotTwitch
                     }
                 }
 
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync().ConfigureAwait(false);
             }
 
             client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
-        void SlothFacts(object sender, OnChatCommandReceivedArgs e)
+        private void SlothFacts(JoinedChannel channel)
         {
             var i = rng.Next(0, _slothFacts.Count);
 
-            client.SendMessage(_slothFacts[i]);
+            client.SendMessage(channel, _slothFacts[i]);
         }
 
-        async Task WoppyWeather(object sender, OnChatCommandReceivedArgs e)
+        private async Task WoppyWeather(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(client);
 
@@ -288,9 +269,10 @@ namespace VainBotTwitch
 
             var response = await httpClient
                 .GetAsync("http://api.openweathermap.org/data/2.5/weather?" +
-                $"zip={e.Command.ArgumentsAsString},us&APPID={openWeatherMapApiKey}");
+                    $"zip={e.Command.ArgumentsAsString},us&APPID={config["openWeatherMapApiKey"]}")
+                .ConfigureAwait(false);
 
-            var respString = await response.Content.ReadAsStringAsync();
+            var respString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -309,7 +291,7 @@ namespace VainBotTwitch
                 $"{weather.Weather[0].Description}, {temp}° F {Utils.RandEmote()}");
         }
 
-        static readonly List<string> _slothFacts = new List<string>
+        private static readonly List<string> _slothFacts = new List<string>
         {
             "Sloths can sometimes maintain their grasp on limbs after death.",
             "Both two-toed and three-toed sloths grow to 1.5 to 2 feet long.",

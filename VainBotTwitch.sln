@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VainBotTwitch", "VainBotTwitch.csproj", "{9EB99E46-EC54-4234-A231-A4FAF466D04C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VainBotTwitch", "src\VainBotTwitch\VainBotTwitch.csproj", "{9EB99E46-EC54-4234-A231-A4FAF466D04C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
