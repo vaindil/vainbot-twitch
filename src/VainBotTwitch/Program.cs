@@ -10,7 +10,6 @@ using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
-using TwitchLib.Client.Services;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
 
