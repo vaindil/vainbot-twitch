@@ -28,7 +28,7 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var url = "http://multistre.am/crendor/";
+            var url = "https://multitwitch.live/crendor/";
 
             foreach (var s in streamers)
             {
