@@ -68,7 +68,7 @@ namespace VainBotTwitch
             "MrDestructoid",
             "OhMyDog"
             "PogChamp",
-            "ResidentSleeper",,
+            "ResidentSleeper",
             "SeriousSloth",
             "SMOrc",
             "StinkyCheese",
