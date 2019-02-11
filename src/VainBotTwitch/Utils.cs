@@ -66,7 +66,7 @@ namespace VainBotTwitch
             "Kreygasm",
             "MingLee",
             "MrDestructoid",
-            "OhMyDog"
+            "OhMyDog",
             "PogChamp",
             "ResidentSleeper",
             "SeriousSloth",
