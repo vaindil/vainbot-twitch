@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Client;
@@ -24,9 +23,9 @@ namespace VainBotTwitch
         private static readonly Random _rng = new Random();
         private static readonly Regex _validZip = new Regex("^[0-9]{5}$");
 
-        private static void Main() => new Program().Run();
+        private static async Task Main() => await new Program().RealMainAsync();
 
-        public void Run()
+        public async Task RealMainAsync()
         {
             _config = new ConfigurationBuilder()
                 .AddJsonFile("config.json")
@@ -40,14 +39,10 @@ namespace VainBotTwitch
 
             _client.AddChatCommandIdentifier('!');
             _client.OnChatCommandReceived += CommandHandler;
-            //client.ChatThrottler = new MessageThrottler(client, 2, new TimeSpan(0, 0, 5));
 
             _client.Connect();
 
-            while (true)
-            {
-                Thread.Sleep(1000);
-            }
+            await Task.Delay(-1);
         }
 
         private async void CommandHandler(object sender, OnChatCommandReceivedArgs e)
