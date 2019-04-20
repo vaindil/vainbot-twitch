@@ -49,7 +49,7 @@ namespace VainBotTwitch.Commands
                 using (var db = new VbContext())
                 {
                     db.MultiStreamers.RemoveRange(db.MultiStreamers);
-                    await db.SaveChangesAsync().ConfigureAwait(false);
+                    await db.SaveChangesAsync();
                 }
 
                 client.SendMessage(e.GetChannel(client), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");

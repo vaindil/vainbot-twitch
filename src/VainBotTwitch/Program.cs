@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -62,7 +63,7 @@ namespace VainBotTwitch
 
                 case "woppy":
                 case "weather":
-                    await WoppyWeather(e).ConfigureAwait(false);
+                    await WoppyWeather(e);
                     return;
             }
 
@@ -70,11 +71,11 @@ namespace VainBotTwitch
             {
                 if (argCount > 0 && e.Command.ChatMessage.IsModerator)
                 {
-                    await QuoteCommand.AddQuoteAsync(sender, e).ConfigureAwait(false);
+                    await QuoteCommand.AddQuoteAsync(sender, e);
                     return;
                 }
 
-                await QuoteCommand.GetQuoteAsync(sender, e, _rng).ConfigureAwait(false);
+                await QuoteCommand.GetQuoteAsync(sender, e, _rng);
                 return;
             }
 
@@ -82,7 +83,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await GetSlothies(e).ConfigureAwait(false);
+                    await GetSlothies(e);
                     return;
                 }
 
@@ -97,7 +98,7 @@ namespace VainBotTwitch
 
                 if (argCount == 2)
                 {
-                    await UpdateSlothies(e).ConfigureAwait(false);
+                    await UpdateSlothies(e);
                     return;
                 }
 
@@ -109,7 +110,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await MultitwitchCommand.GetMultitwitch(sender, e).ConfigureAwait(false);
+                    await MultitwitchCommand.GetMultitwitch(sender, e);
                     return;
                 }
 
@@ -134,7 +135,7 @@ namespace VainBotTwitch
                     && !string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.CurrentCultureIgnoreCase)
                     && e.Command.ChatMessage.IsModerator)
                 {
-                    await MultitwitchCommand.UpdateMultitwitch(sender, e, _api).ConfigureAwait(false);
+                    await MultitwitchCommand.UpdateMultitwitch(sender, e, _api);
                     return;
                 }
             }
@@ -147,7 +148,7 @@ namespace VainBotTwitch
 
             using (var db = new VbContext())
             {
-                var record = await db.Slothies.FindAsync(e.Command.ChatMessage.UserId).ConfigureAwait(false);
+                var record = await db.Slothies.FindAsync(e.Command.ChatMessage.UserId);
                 if (record != null)
                     count = record.Count;
             }
@@ -168,7 +169,7 @@ namespace VainBotTwitch
                 return;
             }
 
-            var users = await _api.V5.Users.GetUserByNameAsync(username).ConfigureAwait(false);
+            var users = await _api.V5.Users.GetUserByNameAsync(username);
             if (users.Total != 1)
             {
                 _client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
@@ -206,7 +207,7 @@ namespace VainBotTwitch
 
             using (var db = new VbContext())
             {
-                var record = await db.Slothies.FindAsync(userId).ConfigureAwait(false);
+                var record = await db.Slothies.FindAsync(userId);
                 if (record == null)
                 {
                     var newRecord = new SlothyRecord
@@ -228,7 +229,7 @@ namespace VainBotTwitch
                     }
                 }
 
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                await db.SaveChangesAsync();
             }
 
             _client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
@@ -263,10 +264,9 @@ namespace VainBotTwitch
 
             var response = await _httpClient
                 .GetAsync("http://api.openweathermap.org/data/2.5/weather?" +
-                    $"zip={e.Command.ArgumentsAsString},us&APPID={_config["openWeatherMapApiKey"]}")
-                .ConfigureAwait(false);
+                    $"zip={e.Command.ArgumentsAsString},us&APPID={_config["openWeatherMapApiKey"]}");
 
-            var respString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var respString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
