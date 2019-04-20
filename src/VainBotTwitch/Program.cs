@@ -15,34 +15,34 @@ using VainBotTwitch.Commands;
 
 namespace VainBotTwitch
 {
-    internal class Program
+    public class Program
     {
-        private static IConfiguration config;
-        private static TwitchClient client;
-        private static TwitchAPI api;
-        private static readonly HttpClient httpClient = new HttpClient();
-        private static readonly Random rng = new Random();
-        private static readonly Regex validZip = new Regex("^[0-9]{5}$");
+        private static IConfiguration _config;
+        private static TwitchClient _client;
+        private static TwitchAPI _api;
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly Random _rng = new Random();
+        private static readonly Regex _validZip = new Regex("^[0-9]{5}$");
 
         private static void Main() => new Program().Run();
 
         public void Run()
         {
-            config = new ConfigurationBuilder()
+            _config = new ConfigurationBuilder()
                 .AddJsonFile("config.json")
                 .Build();
 
-            api = new TwitchAPI();
-            api.Settings.ClientId = config["twitchClientId"];
-            api.Settings.AccessToken = config["twitchOauth"];
-            client = new TwitchClient();
-            client.Initialize(new ConnectionCredentials(config["twitchUsername"], config["twitchOauth"]), config["twitchChannel"]);
+            _api = new TwitchAPI();
+            _api.Settings.ClientId = _config["twitchClientId"];
+            _api.Settings.AccessToken = _config["twitchOauth"];
+            _client = new TwitchClient();
+            _client.Initialize(new ConnectionCredentials(_config["twitchUsername"], _config["twitchOauth"]), _config["twitchChannel"]);
 
-            client.AddChatCommandIdentifier('!');
-            client.OnChatCommandReceived += CommandHandler;
+            _client.AddChatCommandIdentifier('!');
+            _client.OnChatCommandReceived += CommandHandler;
             //client.ChatThrottler = new MessageThrottler(client, 2, new TimeSpan(0, 0, 5));
 
-            client.Connect();
+            _client.Connect();
 
             while (true)
             {
@@ -62,7 +62,7 @@ namespace VainBotTwitch
             {
                 case "slothfact":
                 case "slothfacts":
-                    SlothFacts(e.GetChannel(client));
+                    SlothFacts(e.GetChannel(_client));
                     return;
 
                 case "woppy":
@@ -79,7 +79,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                await QuoteCommand.GetQuoteAsync(sender, e, rng).ConfigureAwait(false);
+                await QuoteCommand.GetQuoteAsync(sender, e, _rng).ConfigureAwait(false);
                 return;
             }
 
@@ -93,7 +93,7 @@ namespace VainBotTwitch
 
                 if (argCount > 0 && string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.OrdinalIgnoreCase))
                 {
-                    client.SendMessage(e.GetChannel(client), "Slothies are a made-up points system. " +
+                    _client.SendMessage(e.GetChannel(_client), "Slothies are a made-up points system. " +
                         "They give you nothing other than bragging rights. Use !slothies to check how " +
                         $"many you have. {Utils.RandEmote()}");
 
@@ -106,7 +106,7 @@ namespace VainBotTwitch
                     return;
                 }
 
-                client.SendMessage(e.GetChannel(client), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(e.GetChannel(_client), $"That's not a valid slothies command, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -122,12 +122,12 @@ namespace VainBotTwitch
                 {
                     if (!e.Command.ChatMessage.IsModerator)
                     {
-                        client.SendMessage(e.GetChannel(client), "See who the nerd is playing with and " +
+                        _client.SendMessage(e.GetChannel(_client), "See who the nerd is playing with and " +
                             $"watch them all together using !multi. {Utils.RandEmote()}");
                     }
                     else
                     {
-                        client.SendMessage(e.GetChannel(client), $"{Utils.RandEmote()} Mods: Clear the multi " +
+                        _client.SendMessage(e.GetChannel(_client), $"{Utils.RandEmote()} Mods: Clear the multi " +
                             "link using !multi clear. " +
                             "Set streamers by providing a list. For example: !multi gmart strippin");
                     }
@@ -139,7 +139,7 @@ namespace VainBotTwitch
                     && !string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.CurrentCultureIgnoreCase)
                     && e.Command.ChatMessage.IsModerator)
                 {
-                    await MultitwitchCommand.UpdateMultitwitch(sender, e, api).ConfigureAwait(false);
+                    await MultitwitchCommand.UpdateMultitwitch(sender, e, _api).ConfigureAwait(false);
                     return;
                 }
             }
@@ -147,7 +147,7 @@ namespace VainBotTwitch
 
         private async Task GetSlothies(OnChatCommandReceivedArgs e)
         {
-            var channel = e.GetChannel(client);
+            var channel = e.GetChannel(_client);
             var count = 0M;
 
             using (var db = new VbContext())
@@ -157,26 +157,26 @@ namespace VainBotTwitch
                     count = record.Count;
             }
 
-            client.SendMessage(
+            _client.SendMessage(
                 channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
         private async Task UpdateSlothies(OnChatCommandReceivedArgs e)
         {
-            var channel = e.GetChannel(client);
+            var channel = e.GetChannel(_client);
             var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
 
             var username = origUsername.ToLower();
             if (username.Length >= 200)
             {
-                client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
-            var users = await api.Users.v5.GetUserByNameAsync(username).ConfigureAwait(false);
+            var users = await _api.V5.Users.GetUserByNameAsync(username).ConfigureAwait(false);
             if (users.Total != 1)
             {
-                client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"That's not a valid user, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -184,20 +184,20 @@ namespace VainBotTwitch
 
             if (userId == e.Command.ChatMessage.UserId)
             {
-                client.SendMessage(channel, $"You can't change your own slothies, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"You can't change your own slothies, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
             if (userId == "45447900")
             {
-                client.SendMessage(channel, $"vaindil's slothies can't be edited, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"vaindil's slothies can't be edited, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
             var validDecimal = decimal.TryParse(e.Command.ArgumentsAsList[1], out var count);
             if (!validDecimal)
             {
-                client.SendMessage(channel, $"That's not a valid number, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"That's not a valid number, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -205,7 +205,7 @@ namespace VainBotTwitch
 
             if (!e.Command.ChatMessage.IsModerator)
             {
-                client.SendMessage(channel, $"You're not a mod, you nerd. {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"You're not a mod, you nerd. {Utils.RandEmote()}");
                 return;
             }
 
@@ -236,39 +236,39 @@ namespace VainBotTwitch
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
 
-            client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
+            _client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
         private void SlothFacts(JoinedChannel channel)
         {
-            var i = rng.Next(0, _slothFacts.Count);
+            var i = _rng.Next(0, _slothFacts.Count);
 
-            client.SendMessage(channel, _slothFacts[i]);
+            _client.SendMessage(channel, _slothFacts[i]);
         }
 
         private async Task WoppyWeather(OnChatCommandReceivedArgs e)
         {
-            var channel = e.GetChannel(client);
+            var channel = e.GetChannel(_client);
 
             if (e.Command.ArgumentsAsList.Count > 0
                 && string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.OrdinalIgnoreCase))
             {
-                client.SendMessage(channel, "Woppy the weather bot can get your current weather. " +
+                _client.SendMessage(channel, "Woppy the weather bot can get your current weather. " +
                     "Use !woppy followed by a US zip code, for example !woppy 90210. Only works " +
                     $"in the US for now! {Utils.RandEmote()}");
 
                 return;
             }
 
-            if (!validZip.IsMatch(e.Command.ArgumentsAsString))
+            if (!_validZip.IsMatch(e.Command.ArgumentsAsString))
             {
-                client.SendMessage(channel, $"That's not a valid US zip code. Try again! {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"That's not a valid US zip code. Try again! {Utils.RandEmote()}");
                 return;
             }
 
-            var response = await httpClient
+            var response = await _httpClient
                 .GetAsync("http://api.openweathermap.org/data/2.5/weather?" +
-                    $"zip={e.Command.ArgumentsAsString},us&APPID={config["openWeatherMapApiKey"]}")
+                    $"zip={e.Command.ArgumentsAsString},us&APPID={_config["openWeatherMapApiKey"]}")
                 .ConfigureAwait(false);
 
             var respString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -278,7 +278,7 @@ namespace VainBotTwitch
                 Console.WriteLine("Weather error, code " + response.StatusCode.ToString());
                 Console.WriteLine("Weather content: " + respString);
 
-                client.SendMessage(channel, $"Error getting the weather. IT'S THEIR FAULT, NOT MINE! {Utils.RandEmote()}");
+                _client.SendMessage(channel, $"Error getting the weather. IT'S THEIR FAULT, NOT MINE! {Utils.RandEmote()}");
                 return;
             }
 
@@ -286,7 +286,7 @@ namespace VainBotTwitch
 
             var temp = (int)Math.Round(((9 / 5) * (weather.Main.Temperature - 273)) + 32);
 
-            client.SendMessage(channel, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
+            _client.SendMessage(channel, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
                 $"{weather.Weather[0].Description}, {temp}° F {Utils.RandEmote()}");
         }
 
