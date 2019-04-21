@@ -9,40 +9,54 @@ using VainBotTwitch.Classes;
 
 namespace VainBotTwitch.Commands
 {
-    public static class MultitwitchCommand
+    public class MultitwitchCommand
     {
-        public static async Task GetMultitwitch(object sender, OnChatCommandReceivedArgs e)
+        private readonly TwitchClient _client;
+        private readonly TwitchAPI _api;
+
+        private List<string> _streamers;
+
+        public MultitwitchCommand(TwitchClient client, TwitchAPI api)
         {
-            var client = (TwitchClient)sender;
+            _client = client;
+            _api = api;
+        }
 
-            List<string> streamers;
-
+        public async Task InitializeAsync()
+        {
             using (var db = new VbContext())
             {
-                streamers = await db.MultiStreamers.Select(s => s.Username).ToListAsync();
+                _streamers = await db.MultiStreamers.Select(s => s.Username).ToListAsync();
+            }
+        }
+
+        public async Task HandleCommandAsync(OnChatCommandReceivedArgs e)
+        {
+            if (e.Command.ArgumentsAsList.Count == 1
+                && string.Equals(e.Command.ArgumentsAsList[0], "clear", System.StringComparison.OrdinalIgnoreCase))
+            {
             }
 
-            if (streamers.Count == 0)
+        public async Task GetMultitwitchAsync(OnChatCommandReceivedArgs e)
+        {
+            if (_streamers.Count == 0)
             {
-                client.SendMessage(e.GetChannel(client), $"The nerd isn't playing with any other nerds. {Utils.RandEmote()}");
+                _client.SendMessage(e, "The nerd isn't playing with any other nerds.");
                 return;
             }
 
             var url = "https://multitwitch.live/crendor/";
 
-            foreach (var s in streamers)
+            foreach (var s in _streamers)
             {
                 url += s + "/";
             }
 
-            client.SendMessage(e.GetChannel(client),
-                               "Watch ALL of the nerds! " + url + $" {Utils.RandEmote()}");
+            _client.SendMessage(e, "Watch ALL of the nerds! " + url);
         }
 
-        public static async Task UpdateMultitwitch(object sender, OnChatCommandReceivedArgs e, TwitchAPI api)
+        public async Task UpdateMultitwitchAsync(OnChatCommandReceivedArgs e)
         {
-            var client = (TwitchClient)sender;
-
             if (e.Command.ArgumentsAsList.Count == 1
                 && string.Equals(e.Command.ArgumentsAsList[0], "clear", System.StringComparison.OrdinalIgnoreCase))
             {
@@ -101,7 +115,7 @@ namespace VainBotTwitch.Commands
                 await db.SaveChangesAsync();
             }
 
-            await GetMultitwitch(sender, e);
+            await GetMultitwitchAsync(sender, e);
         }
     }
 }

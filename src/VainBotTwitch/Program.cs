@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -58,12 +57,12 @@ namespace VainBotTwitch
             {
                 case "slothfact":
                 case "slothfacts":
-                    SlothFacts(e.GetChannel(_client));
+                    GetSlothFact(e.GetChannel(_client));
                     return;
 
                 case "woppy":
                 case "weather":
-                    await WoppyWeather(e);
+                    await GetWoppyWeatherAsync(e);
                     return;
             }
 
@@ -83,7 +82,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await GetSlothies(e);
+                    await GetSlothiesAsync(e);
                     return;
                 }
 
@@ -98,7 +97,7 @@ namespace VainBotTwitch
 
                 if (argCount == 2)
                 {
-                    await UpdateSlothies(e);
+                    await UpdateSlothiesAsync(e);
                     return;
                 }
 
@@ -110,7 +109,7 @@ namespace VainBotTwitch
             {
                 if (argCount == 0)
                 {
-                    await MultitwitchCommand.GetMultitwitch(sender, e);
+                    await MultitwitchCommand.GetMultitwitchAsync(sender, e);
                     return;
                 }
 
@@ -135,13 +134,13 @@ namespace VainBotTwitch
                     && !string.Equals(e.Command.ArgumentsAsList[0], "help", StringComparison.CurrentCultureIgnoreCase)
                     && e.Command.ChatMessage.IsModerator)
                 {
-                    await MultitwitchCommand.UpdateMultitwitch(sender, e, _api);
+                    await MultitwitchCommand.UpdateMultitwitchAsync(sender, e, _api);
                     return;
                 }
             }
         }
 
-        private async Task GetSlothies(OnChatCommandReceivedArgs e)
+        private async Task GetSlothiesAsync(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(_client);
             var count = 0M;
@@ -157,7 +156,7 @@ namespace VainBotTwitch
                 channel, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
-        private async Task UpdateSlothies(OnChatCommandReceivedArgs e)
+        private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(_client);
             var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
@@ -235,14 +234,14 @@ namespace VainBotTwitch
             _client.SendMessage(channel, $"{origUsername} now has {count.ToDisplayString()}. {Utils.RandEmote()}");
         }
 
-        private void SlothFacts(JoinedChannel channel)
+        private void GetSlothFact(JoinedChannel channel)
         {
             var i = _rng.Next(0, _slothFacts.Count);
 
             _client.SendMessage(channel, _slothFacts[i]);
         }
 
-        private async Task WoppyWeather(OnChatCommandReceivedArgs e)
+        private async Task GetWoppyWeatherAsync(OnChatCommandReceivedArgs e)
         {
             var channel = e.GetChannel(_client);
 

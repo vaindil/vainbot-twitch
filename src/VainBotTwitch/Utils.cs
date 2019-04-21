@@ -8,11 +8,17 @@ namespace VainBotTwitch
 {
     public static class Utils
     {
-        static readonly Random rng = new Random();
+        private static readonly Random _rng = new Random();
 
         public static JoinedChannel GetChannel(this OnChatCommandReceivedArgs e, TwitchClient client)
         {
             return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
+        }
+
+        public static void SendMessage(this TwitchClient client, OnChatCommandReceivedArgs e, string message)
+        {
+            message += $" {RandEmote()}";
+            client.SendMessage(e.Command.ChatMessage.Channel, message);
         }
 
         public static string ToDisplayString(this decimal count)
@@ -27,7 +33,18 @@ namespace VainBotTwitch
             return display;
         }
 
-        static string GetNumberString(this decimal num)
+        public static string RandEmote()
+        {
+            var r = _rng.Next(0, _emotes.Count);
+            return _emotes[r];
+        }
+
+        public static bool IsMod(this OnChatCommandReceivedArgs e)
+        {
+            return e.Command.ChatMessage.IsBroadcaster || e.Command.ChatMessage.IsModerator;
+        }
+
+        private static string GetNumberString(this decimal num)
         {
             if ((int)num == num)
                 return ((int)num).ToString();
@@ -37,13 +54,7 @@ namespace VainBotTwitch
                 return num.ToString();
         }
 
-        public static string RandEmote()
-        {
-            var r = rng.Next(0, _emotes.Count);
-            return _emotes[r];
-        }
-
-        static readonly List<string> _emotes = new List<string>
+        private static readonly List<string> _emotes = new List<string>
         {
             "4Head",
             "BabyRage",
