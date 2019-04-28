@@ -166,7 +166,7 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            if (amount > 10000)
+            if (amount > 1000)
             {
                 _client.SendMessage(e, $"{msgBegin} You cannot bet more than 1,000 slothies at a time.");
                 return;
