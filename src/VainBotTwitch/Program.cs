@@ -5,6 +5,7 @@ using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using VainBotTwitch.Commands;
+using VainBotTwitch.Services;
 
 namespace VainBotTwitch
 {
@@ -14,9 +15,12 @@ namespace VainBotTwitch
         private TwitchClient _client;
         private TwitchAPI _api;
 
+        private SlothyService _slothySvc;
+
         private MultitwitchCommandHandler _multiHandler;
         private QuoteCommandHandler _quoteHandler;
         private SlothyCommandHandler _slothyHandler;
+        private SlothyBetCommandHandler _slothyBetCommandHandler;
         private SlothFactCommandHandler _slothFactHandler;
         private WoppyCommandHandler _woppyHandler;
 
@@ -37,14 +41,18 @@ namespace VainBotTwitch
             _client.AddChatCommandIdentifier('!');
             _client.OnChatCommandReceived += CommandHandler;
 
+            _slothySvc = new SlothyService();
+            await _slothySvc.InitializeAsync();
+
             _multiHandler = new MultitwitchCommandHandler(_client, _api);
             await _multiHandler.InitializeAsync();
 
             _quoteHandler = new QuoteCommandHandler(_client);
             await _quoteHandler.InitializeAsync();
 
-            _slothyHandler = new SlothyCommandHandler(_client, _api);
-            await _slothyHandler.InitializeAsync();
+            _slothyHandler = new SlothyCommandHandler(_client, _api, _slothySvc);
+
+            _slothyBetCommandHandler = new SlothyBetCommandHandler(_client, _slothySvc);
 
             _slothFactHandler = new SlothFactCommandHandler(_client);
 
@@ -75,6 +83,11 @@ namespace VainBotTwitch
                 case "slothy":
                 case "slothies":
                     await _slothyHandler.HandleCommandAsync(e);
+                    break;
+
+                case "slothybet":
+                case "slothiebet":
+                    await _slothyBetCommandHandler.HandleCommandAsync(e);
                     break;
 
                 case "slothfact":

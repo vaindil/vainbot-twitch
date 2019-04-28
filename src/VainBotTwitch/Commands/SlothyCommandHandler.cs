@@ -1,11 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
-using VainBotTwitch.Classes;
+using VainBotTwitch.Services;
 
 namespace VainBotTwitch.Commands
 {
@@ -13,20 +11,13 @@ namespace VainBotTwitch.Commands
     {
         private readonly TwitchClient _client;
         private readonly TwitchAPI _api;
-        private List<SlothyRecord> _slothyRecords;
+        private readonly SlothyService _slothySvc;
 
-        public SlothyCommandHandler(TwitchClient client, TwitchAPI api)
+        public SlothyCommandHandler(TwitchClient client, TwitchAPI api, SlothyService slothySvc)
         {
             _client = client;
             _api = api;
-        }
-
-        public async Task InitializeAsync()
-        {
-            using (var db = new VbContext())
-            {
-                _slothyRecords = await db.Slothies.ToListAsync();
-            }
+            _slothySvc = slothySvc;
         }
 
         public async Task HandleCommandAsync(OnChatCommandReceivedArgs e)
@@ -57,11 +48,7 @@ namespace VainBotTwitch.Commands
 
         private void GetSlothies(OnChatCommandReceivedArgs e)
         {
-            var count = 0M;
-            var record = _slothyRecords.Find(x => x.UserId == e.Command.ChatMessage.UserId);
-            if (record != null)
-                count = record.Count;
-
+            var count = _slothySvc.GetSlothyCount(e.Command.ChatMessage.UserId);
             _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}.");
         }
 
@@ -97,8 +84,9 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var validDecimal = false;
             decimal count;
+
+            bool validDecimal;
             try
             {
                 // use try/catch to prevent overflow exception
@@ -117,34 +105,7 @@ namespace VainBotTwitch.Commands
             }
 
             count = Math.Round(count, 2);
-
-            var isNew = false;
-            var record = _slothyRecords.Find(x => x.UserId == userId);
-            if (record != null)
-            {
-                record.Count += count;
-            }
-            else
-            {
-                isNew = true;
-                record = new SlothyRecord
-                {
-                    UserId = userId,
-                    Count = count
-                };
-
-                _slothyRecords.Add(record);
-            }
-
-            using (var db = new VbContext())
-            {
-                if (isNew)
-                    db.Slothies.Add(record);
-                else
-                    db.Slothies.Update(record);
-
-                await db.SaveChangesAsync();
-            }
+            count = await _slothySvc.AddSlothiesAsync(userId, count);
 
             _client.SendMessage(e, $"{origUsername} now has {count.ToDisplayString()}.");
         }
