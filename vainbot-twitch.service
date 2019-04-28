@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=vainbot-twitch
 WorkingDirectory=/home/vainbot-twitch/bot
-ExecStart=/usr/bin/dotnet /home/vainbot-twitch/bot/VainBot.dll
+ExecStart=/usr/bin/dotnet /home/vainbot-twitch/bot/VainBotTwitch.dll
 Restart=on-failure
 
 [Install]
