@@ -1,0 +1,13 @@
+[Unit]
+Description=VainBot Twitch
+After=network.target
+
+[Service]
+Type=simple
+User=vainbot-twitch
+WorkingDirectory=/home/vainbot-twitch/bot
+ExecStart=/usr/bin/dotnet /home/vainbot-twitch/bot/VainBot.dll
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
