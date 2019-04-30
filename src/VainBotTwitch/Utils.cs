@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using VainBotTwitch.Classes;
 
 namespace VainBotTwitch
 {
@@ -42,6 +43,26 @@ namespace VainBotTwitch
         public static bool IsMod(this OnChatCommandReceivedArgs e)
         {
             return e.Command.ChatMessage.IsBroadcaster || e.Command.ChatMessage.IsModerator;
+        }
+
+        public static bool TryParseSlothyBetType(string str, out SlothyBetType type)
+        {
+            str = str.ToLower();
+
+            type = SlothyBetType.Win;
+
+            if (str == "win" || str == "won")
+            {
+                return true;
+            }
+
+            if (str == "lose" || str == "loss" || str == "lost")
+            {
+                type = SlothyBetType.Lose;
+                return true;
+            }
+
+            return false;
         }
 
         private static string GetNumberString(this decimal num)

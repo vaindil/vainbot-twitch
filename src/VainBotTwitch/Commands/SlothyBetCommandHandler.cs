@@ -65,9 +65,9 @@ namespace VainBotTwitch.Commands
                     return;
                 }
 
-                if (Enum.TryParse(typeof(SlothyBetType), e.Command.ArgumentsAsList[1], true, out var type))
+                if (Utils.TryParseSlothyBetType(e.Command.ArgumentsAsList[1], out var type))
                 {
-                    TakeBet(e, amount, (SlothyBetType)type);
+                    TakeBet(e, amount, type);
                 }
                 else
                 {
@@ -166,16 +166,16 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            if (amount > 1000)
+            if (amount > 100)
             {
-                _client.SendMessage(e, $"{msgBegin} You cannot bet more than 1,000 slothies at a time.");
+                _client.SendMessage(e, $"{msgBegin} You cannot bet more than 100 slothies at a time.");
                 return;
             }
 
             var curCount = _slothySvc.GetSlothyCount(e.Command.ChatMessage.UserId);
-            if (curCount <= -5000)
+            if (curCount <= -1000)
             {
-                _client.SendMessage(e, $"{msgBegin} You must have more than -5,000 slothies to place bets.");
+                _client.SendMessage(e, $"{msgBegin} You must have more than -1,000 slothies to place bets.");
                 return;
             }
 
