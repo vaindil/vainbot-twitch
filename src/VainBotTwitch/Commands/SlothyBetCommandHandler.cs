@@ -41,7 +41,8 @@ namespace VainBotTwitch.Commands
             if (subCommand == "help")
             {
                 _client.SendMessage(e, "Use !slothybet <amount> <win/lose> to bet. For example, " +
-                    "to bet 10 slothies that the nerd will win, use !slothybet 10 win.");
+                    "to bet 10 slothies that the nerd will win, use !slothybet 10 win. A mod must " +
+                    "open betting before you can place bets.");
                 return;
             }
 

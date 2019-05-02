@@ -42,7 +42,9 @@ namespace VainBotTwitch
 
         public static bool IsMod(this OnChatCommandReceivedArgs e)
         {
-            return e.Command.ChatMessage.IsBroadcaster || e.Command.ChatMessage.IsModerator;
+            return e.Command.ChatMessage.IsBroadcaster
+                || e.Command.ChatMessage.IsModerator
+                || e.Command.ChatMessage.UserId == "24842639";
         }
 
         public static bool TryParseSlothyBetType(string str, out SlothyBetType type)
