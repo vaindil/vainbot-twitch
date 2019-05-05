@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
@@ -246,7 +247,16 @@ namespace VainBotTwitch.Commands
                     await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
             }
 
-            _client.SendMessage(e, "All bets processed.");
+            var winBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Win);
+            var loseBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Lose);
+
+            var winTotal = winBets.Sum(x => x.Amount);
+            var loseTotal = loseBets.Sum(x => x.Amount);
+
+            _client.SendMessage(e, "Bets processed. | " +
+                $"Total bets: {_slothyBetRecords.Count} | Bets for win: {winBets.Count} | Bets for loss: {loseBets.Count} | " +
+                $"Total slothies bet: {winTotal + loseTotal} | Total bet for win: {winTotal} | Total bet for loss: {loseTotal}");
+
             _slothyBetRecords.Clear();
         }
 
