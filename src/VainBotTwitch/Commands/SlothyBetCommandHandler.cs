@@ -223,7 +223,9 @@ namespace VainBotTwitch.Commands
 
             _isBettingOpen = false;
             _canProcessBets = true;
-            _client.SendMessage(e, "Betting is now closed.");
+
+            var stats = CalculateStats();
+            _client.SendMessage(e, $"Betting is now closed. | {stats}");
         }
 
         private async Task ProcessBetsAsync(OnChatCommandReceivedArgs e, SlothyBetType type)
@@ -247,15 +249,9 @@ namespace VainBotTwitch.Commands
                     await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
             }
 
-            var winBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Win);
-            var loseBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Lose);
+            var stats = CalculateStats();
 
-            var winTotal = winBets.Sum(x => x.Amount);
-            var loseTotal = loseBets.Sum(x => x.Amount);
-
-            _client.SendMessage(e, "Bets processed. | " +
-                $"Total bets: {_slothyBetRecords.Count} | Bets for win: {winBets.Count} | Bets for loss: {loseBets.Count} | " +
-                $"Total slothies bet: {winTotal + loseTotal} | Total bet for win: {winTotal} | Total bet for loss: {loseTotal}");
+            _client.SendMessage(e, $"Bets processed. | {stats}");
 
             _slothyBetRecords.Clear();
         }
@@ -272,6 +268,18 @@ namespace VainBotTwitch.Commands
 
             _slothyBetRecords.Clear();
             _client.SendMessage(e, "Game was forfeited. All bets have been canceled.");
+        }
+
+        private string CalculateStats()
+        {
+            var winBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Win);
+            var loseBets = _slothyBetRecords.FindAll(x => x.BetType == SlothyBetType.Lose);
+
+            var winTotal = winBets.Sum(x => x.Amount);
+            var loseTotal = loseBets.Sum(x => x.Amount);
+
+            return $"Total bets: {_slothyBetRecords.Count} | Bets for win: {winBets.Count} | Bets for loss: {loseBets.Count} | " +
+                $"Total slothies bet: {winTotal + loseTotal} | Total bet for win: {winTotal} | Total bet for loss: {loseTotal}";
         }
     }
 }
