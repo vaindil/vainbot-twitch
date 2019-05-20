@@ -71,28 +71,28 @@ namespace VainBotTwitch
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
-            var oldScore = _currentPoints;
+            //var oldScore = _currentPoints;
 
-            switch (e.Subscription.SubscriptionPlan)
-            {
-                case SubscriptionPlan.Prime:
-                case SubscriptionPlan.Tier1:
-                    _currentPoints++;
-                    break;
+            //switch (e.Subscription.SubscriptionPlan)
+            //{
+            //    case SubscriptionPlan.Prime:
+            //    case SubscriptionPlan.Tier1:
+            //        _currentPoints++;
+            //        break;
 
-                case SubscriptionPlan.Tier2:
-                    _currentPoints += 2;
-                    break;
+            //    case SubscriptionPlan.Tier2:
+            //        _currentPoints += 2;
+            //        break;
 
-                case SubscriptionPlan.Tier3:
-                    _currentPoints += 6;
-                    break;
-            }
+            //    case SubscriptionPlan.Tier3:
+            //        _currentPoints += 6;
+            //        break;
+            //}
 
-            LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
-                $"Old count: {oldScore} | New count: {_currentPoints}");
+            //LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
+            //    $"Old count: {oldScore} | New count: {_currentPoints}");
 
-            await UpdateRemoteCountAsync();
+            await ManualUpdateAsync();
         }
 
         public async Task ManualUpdateAsync()
