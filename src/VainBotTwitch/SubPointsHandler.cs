@@ -61,6 +61,7 @@ namespace VainBotTwitch
         {
             _pubSub.ListenToSubscriptions("7555574");
             _pubSub.SendTopics(_config["subPointsAccessToken"]);
+            LogToConsole("PubSub connected and topics sent");
         }
 
         private void PubSubClosed(object sender, EventArgs e)
@@ -70,6 +71,8 @@ namespace VainBotTwitch
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
+            var oldScore = _currentPoints;
+
             switch (e.Subscription.SubscriptionPlan)
             {
                 case SubscriptionPlan.Prime:
@@ -85,6 +88,9 @@ namespace VainBotTwitch
                     _currentPoints += 6;
                     break;
             }
+
+            LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
+                $"Old count: {oldScore} | New count: {_currentPoints}");
 
             await UpdateRemoteCountAsync();
         }
@@ -103,6 +109,8 @@ namespace VainBotTwitch
             var response = await _httpClient.SendAsync(request);
             var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
 
+            LogToConsole($"Points manually updated. Old score {_currentPoints} | new score {counts.Score}");
+
             _currentPoints = counts.Score;
         }
 
@@ -112,6 +120,11 @@ namespace VainBotTwitch
             request.Headers.Authorization = new AuthenticationHeaderValue(_config["subPointsApiSecret"]);
 
             await _httpClient.SendAsync(request);
+        }
+
+        private void LogToConsole(string message)
+        {
+            Console.WriteLine($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff}: {message}");
         }
 
         /* *****************************
