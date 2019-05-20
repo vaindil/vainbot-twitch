@@ -24,6 +24,10 @@ namespace VainBotTwitch
         private SlothFactCommandHandler _slothFactHandler;
         private WoppyCommandHandler _woppyHandler;
 
+#pragma warning disable IDE0052 // Remove unread private members
+        private SubPointsHandler _subPointsHandler;
+#pragma warning restore IDE0052 // Remove unread private members
+
         public static async Task Main() => await new Program().RealMainAsync();
 
         public async Task RealMainAsync()
@@ -51,14 +55,13 @@ namespace VainBotTwitch
             await _quoteHandler.InitializeAsync();
 
             _slothyHandler = new SlothyCommandHandler(_client, _api, _slothySvc);
-
             _slothyBetCommandHandler = new SlothyBetCommandHandler(_client, _slothySvc);
-
             _slothFactHandler = new SlothFactCommandHandler(_client);
-
             _woppyHandler = new WoppyCommandHandler(_config, _client);
 
             _client.Connect();
+
+            _subPointsHandler = new SubPointsHandler(_config);
 
             await Task.Delay(-1);
         }

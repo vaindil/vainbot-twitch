@@ -4,5 +4,8 @@
   "twitchOauth": "",
   "twitchClientId": "",
   "twitchChannel": "",
-  "openWeatherMapApiKey": ""
+  "openWeatherMapApiKey": "",
+  "subPointsAccessToken": "",
+  "subPointsRefreshToken": "",
+  "subPointsApiSecret": ""
 }
