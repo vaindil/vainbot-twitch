@@ -92,7 +92,7 @@ namespace VainBotTwitch
             //LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
             //    $"Old count: {oldScore} | New count: {_currentPoints}");
 
-            await Task.Delay(5000);
+            await Task.Delay(10000);
             await ManualUpdateAsync();
         }
 
