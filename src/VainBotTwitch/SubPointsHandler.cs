@@ -36,7 +36,7 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnChannelSubscription += OnChannelSubscription;
 
-            _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+            _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(20));
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
         }
 
@@ -71,29 +71,31 @@ namespace VainBotTwitch
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
-            //var oldScore = _currentPoints;
+            if (e.Subscription.Context == "resub")
+                return;
 
-            //switch (e.Subscription.SubscriptionPlan)
-            //{
-            //    case SubscriptionPlan.Prime:
-            //    case SubscriptionPlan.Tier1:
-            //        _currentPoints++;
-            //        break;
+            var oldScore = _currentPoints;
 
-            //    case SubscriptionPlan.Tier2:
-            //        _currentPoints += 2;
-            //        break;
+            switch (e.Subscription.SubscriptionPlan)
+            {
+                case SubscriptionPlan.Prime:
+                case SubscriptionPlan.Tier1:
+                    _currentPoints++;
+                    break;
 
-            //    case SubscriptionPlan.Tier3:
-            //        _currentPoints += 6;
-            //        break;
-            //}
+                case SubscriptionPlan.Tier2:
+                    _currentPoints += 2;
+                    break;
 
-            //LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
-            //    $"Old count: {oldScore} | New count: {_currentPoints}");
+                case SubscriptionPlan.Tier3:
+                    _currentPoints += 6;
+                    break;
+            }
 
-            await Task.Delay(10000);
-            await ManualUpdateAsync();
+            LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
+                $"Old count: {oldScore} | New count: {_currentPoints}");
+
+            await UpdateRemoteCountAsync();
         }
 
         public async Task ManualUpdateAsync()
