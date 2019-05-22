@@ -71,8 +71,14 @@ namespace VainBotTwitch
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
+            // a resub may or may not count toward current sub points because of the grace period,
+            // so it has to be checked manually
             if (e.Subscription.Context == "resub")
+            {
+                await Task.Delay(10000);
+                await ManualUpdateAsync();
                 return;
+            }
 
             var oldScore = _currentPoints;
 
