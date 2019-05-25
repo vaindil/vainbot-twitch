@@ -12,12 +12,12 @@ namespace VainBotTwitch.Commands
 {
     public class WoppyCommandHandler
     {
-        private readonly IConfiguration _config;
+        private readonly BotConfig _config;
         private readonly TwitchClient _client;
         private readonly HttpClient _httpClient = new HttpClient();
         private readonly Regex _validZip = new Regex("^[0-9]{5}$");
 
-        public WoppyCommandHandler(IConfiguration config, TwitchClient client)
+        public WoppyCommandHandler(BotConfig config, TwitchClient client)
         {
             _config = config;
             _client = client;
@@ -47,7 +47,7 @@ namespace VainBotTwitch.Commands
 
             var response = await _httpClient
                 .GetAsync("http://api.openweathermap.org/data/2.5/weather?" +
-                    $"zip={e.Command.ArgumentsAsString},us&APPID={_config["openWeatherMapApiKey"]}");
+                    $"zip={e.Command.ArgumentsAsString},us&APPID={_config.OpenWeatherMapApiKey}");
 
             var respString = await response.Content.ReadAsStringAsync();
 

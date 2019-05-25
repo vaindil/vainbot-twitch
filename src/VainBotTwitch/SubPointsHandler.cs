@@ -5,17 +5,23 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchLib.Client;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Enums;
 using TwitchLib.PubSub.Events;
 using VainBotTwitch.Classes;
+using VainBotTwitch.Services;
 
 namespace VainBotTwitch
 {
     public class SubPointsHandler
     {
-        private readonly IConfiguration _config;
+        private readonly BotConfig _config;
+        private readonly TwitchClient _client;
+        private readonly SlothyService _slothySvc;
+
         private readonly HttpClient _httpClient = new HttpClient();
+        private readonly Random _rng = new Random();
 
         private readonly TwitchPubSub _pubSub;
 
@@ -26,9 +32,11 @@ namespace VainBotTwitch
 
         private int _currentPoints;
 
-        public SubPointsHandler(IConfiguration config)
+        public SubPointsHandler(BotConfig config, TwitchClient client, SlothyService slothySvc)
         {
             _config = config;
+            _client = client;
+            _slothySvc = slothySvc;
 
             _pubSub = new TwitchPubSub();
             _pubSub.OnPubSubServiceConnected += PubSubConnected;
@@ -59,8 +67,8 @@ namespace VainBotTwitch
 
         private void PubSubConnected(object sender, EventArgs e)
         {
-            _pubSub.ListenToSubscriptions("7555574");
-            _pubSub.SendTopics(_config["subPointsAccessToken"]);
+            _pubSub.ListenToSubscriptions(_config.TwitchChannelId);
+            _pubSub.SendTopics(_config.SubPointsAccessToken);
             LogToConsole("PubSub connected and topics sent");
         }
 
@@ -104,6 +112,33 @@ namespace VainBotTwitch
             await UpdateRemoteCountAsync();
         }
 
+        private async Task NewSubDiceRollAsync(string displayName, string userId)
+        {
+            var msg = $"{displayName} just subscribed! ";
+
+            var roll = _rng.Next(1, 21);
+            if (roll == 1)
+            {
+                msg += "You rolled a 1! Have a consolation slothy.";
+                await _slothySvc.AddSlothiesAsync(userId, 1);
+            }
+            else if (roll == 20)
+            {
+                msg += "You rolled a 20!!! Enjoy your bonus slothy.";
+                await _slothySvc.AddSlothiesAsync(userId, 1);
+            }
+            else if (roll == 8 || roll == 11 || roll == 18)
+            {
+                msg += $"You rolled an {roll}!";
+            }
+            else
+            {
+                msg += $"You rolled a {roll}!";
+            }
+
+            _client.SendMessage(_config.TwitchChannel, msg);
+        }
+
         public async Task ManualUpdateAsync()
         {
             await GetCurrentPointsAsync();
@@ -113,7 +148,7 @@ namespace VainBotTwitch
         private async Task GetCurrentPointsAsync()
         {
             var request = new HttpRequestMessage(HttpMethod.Get, "https://api.twitch.tv/api/channels/crendor/subscriber_count");
-            request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _config["subPointsAccessToken"]);
+            request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _config.SubPointsAccessToken);
 
             var response = await _httpClient.SendAsync(request);
             var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
@@ -126,7 +161,7 @@ namespace VainBotTwitch
         private async Task UpdateRemoteCountAsync()
         {
             var request = new HttpRequestMessage(HttpMethod.Put, $"https://ws.vaindil.xyz/crendor/points/{_currentPoints}");
-            request.Headers.Authorization = new AuthenticationHeaderValue(_config["subPointsApiSecret"]);
+            request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 
             await _httpClient.SendAsync(request);
         }

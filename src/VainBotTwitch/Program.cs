@@ -4,6 +4,7 @@ using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
 using VainBotTwitch.Services;
 
@@ -11,7 +12,7 @@ namespace VainBotTwitch
 {
     public class Program
     {
-        private IConfiguration _config;
+        private BotConfig _config;
         private TwitchClient _client;
         private TwitchAPI _api;
 
@@ -32,15 +33,17 @@ namespace VainBotTwitch
 
         public async Task RealMainAsync()
         {
-            _config = new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                 .AddJsonFile("config.json")
                 .Build();
 
+            _config = new BotConfig(config);
+
             _api = new TwitchAPI();
-            _api.Settings.ClientId = _config["twitchClientId"];
-            _api.Settings.AccessToken = _config["twitchOauth"];
+            _api.Settings.ClientId = _config.TwitchClientId;
+            _api.Settings.AccessToken = _config.TwitchOAuth;
             _client = new TwitchClient();
-            _client.Initialize(new ConnectionCredentials(_config["twitchUsername"], _config["twitchOauth"]), _config["twitchChannel"]);
+            _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth, _config.TwitchChannel));
 
             _client.AddChatCommandIdentifier('!');
             _client.OnChatCommandReceived += CommandHandler;
@@ -61,7 +64,7 @@ namespace VainBotTwitch
 
             _client.Connect();
 
-            _subPointsHandler = new SubPointsHandler(_config);
+            _subPointsHandler = new SubPointsHandler(_config, _client, _slothySvc);
 
             await Task.Delay(-1);
         }
