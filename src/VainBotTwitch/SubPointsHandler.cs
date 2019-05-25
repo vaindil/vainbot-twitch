@@ -110,9 +110,18 @@ namespace VainBotTwitch
                 $"Old count: {oldScore} | New count: {_currentPoints}");
 
             await UpdateRemoteCountAsync();
+
+            if (e.Subscription.Context == "sub")
+            {
+                await NewSubDieRollAsync(e.Subscription.DisplayName, e.Subscription.UserId);
+            }
+            else if (e.Subscription.Context != "resub")
+            {
+                await NewSubDieRollAsync(e.Subscription.RecipientDisplayName, e.Subscription.RecipientId);
+            }
         }
 
-        private async Task NewSubDiceRollAsync(string displayName, string userId)
+        private async Task NewSubDieRollAsync(string displayName, string userId)
         {
             var msg = $"{displayName} just subscribed! ";
 
@@ -139,7 +148,7 @@ namespace VainBotTwitch
             _client.SendMessage(_config.TwitchChannel, msg);
         }
 
-        public async Task ManualUpdateAsync()
+        private async Task ManualUpdateAsync()
         {
             await GetCurrentPointsAsync();
             await UpdateRemoteCountAsync();
