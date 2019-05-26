@@ -46,7 +46,7 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnChannelSubscription += OnChannelSubscription;
 
-            _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+            _manualUpdateTimer = new Timer(async _ => await GetCurrentPointsAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
             _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
         }
@@ -87,7 +87,7 @@ namespace VainBotTwitch
             if (e.Subscription.Context == "resub")
             {
                 await Task.Delay(10000);
-                await ManualUpdateAsync();
+                await GetCurrentPointsAsync();
                 return;
             }
 
@@ -143,11 +143,6 @@ namespace VainBotTwitch
             }
 
             _client.SendMessage(_config.TwitchChannel, msg);
-        }
-
-        private async Task ManualUpdateAsync()
-        {
-            await GetCurrentPointsAsync();
         }
 
         private async Task GetCurrentPointsAsync()
