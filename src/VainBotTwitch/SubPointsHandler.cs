@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -29,7 +29,11 @@ namespace VainBotTwitch
         private readonly Timer _manualUpdateTimer;
         private readonly Timer _batchSubUpdateTimer;
         private readonly Timer _pubSubReconnectTimer;
+        private Timer _giftedSubBatchTimer;
 #pragma warning restore IDE0052 // Remove unread private members
+
+        private readonly List<GiftedSubBatch> _giftedSubBatches = new List<GiftedSubBatch>();
+        private bool _areGiftSubBatchesBeingProcessed = false;
 
         private int _previousPoints;
         private int _currentPoints;
@@ -116,6 +120,9 @@ namespace VainBotTwitch
 
             if (e.Subscription.Context == "sub")
                 await NewSubDieRollAsync(e.Subscription.DisplayName, e.Subscription.UserId);
+
+            if (e.Subscription.Context == "subgift")
+                await HandleGiftSubAsync(e.Subscription.DisplayName, e.Subscription.UserId);
         }
 
         private async Task NewSubDieRollAsync(string displayName, string userId)
@@ -143,6 +150,64 @@ namespace VainBotTwitch
             }
 
             _client.SendMessage(_config.TwitchChannel, msg);
+        }
+
+        private async Task HandleGiftSubAsync(string displayName, string userId)
+        {
+            while (_areGiftSubBatchesBeingProcessed)
+            {
+                await Task.Delay(1000);
+            }
+
+            var existing = _giftedSubBatches.Find(x => x.UserId == userId);
+            if (existing != null)
+                existing.NumSubs++;
+            else
+                _giftedSubBatches.Add(new GiftedSubBatch(displayName, userId));
+
+            if (_giftedSubBatchTimer != null)
+            {
+                _giftedSubBatchTimer.Dispose();
+                _giftedSubBatchTimer = new Timer(async _ => await ProcessGiftSubBatchesAsync(), null, 10000, Timeout.Infinite);
+            }
+        }
+
+        private async Task ProcessGiftSubBatchesAsync()
+        {
+            _areGiftSubBatchesBeingProcessed = true;
+
+            try
+            {
+                foreach (var batch in _giftedSubBatches)
+                {
+                    await _slothySvc.AddSlothiesAsync(batch.UserId, batch.NumSubs);
+
+                    string msg;
+                    if (batch.NumSubs == 1)
+                    {
+                        msg = $"Thank you {batch.DisplayName} for your gifted sub! Have a slothy.";
+                    }
+                    else
+                    {
+                        msg = $"Thank you {batch.DisplayName} for your {batch.NumSubs} gifted subs! Have some slothies.";
+                    }
+
+                    _client.SendMessage(_config.TwitchChannel, msg);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogToConsole($"Error processing gift sub batch: {ex.Message}");
+            }
+            finally
+            {
+                _giftedSubBatches.Clear();
+
+                _giftedSubBatchTimer.Dispose();
+                _giftedSubBatchTimer = null;
+
+                _areGiftSubBatchesBeingProcessed = false;
+            }
         }
 
         private async Task GetCurrentPointsAsync()
@@ -179,6 +244,22 @@ namespace VainBotTwitch
         private void LogToConsole(string message)
         {
             Console.WriteLine($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff}: {message}");
+        }
+
+        private class GiftedSubBatch
+        {
+            public GiftedSubBatch(string displayName, string userId)
+            {
+                DisplayName = displayName;
+                UserId = userId;
+                NumSubs = 1;
+            }
+
+            public string DisplayName { get; set; }
+
+            public string UserId { get; set; }
+
+            public int NumSubs { get; set; }
         }
 
         /* *****************************
