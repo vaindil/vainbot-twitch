@@ -158,7 +158,7 @@ namespace VainBotTwitch
             var response = await _httpClient.SendAsync(request);
             var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
 
-            LogToConsole($"Points manually updated. Old score {_currentPoints} | new score {counts.Score}");
+            LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
 
             _currentPoints = counts.Score;
         }
@@ -167,6 +167,7 @@ namespace VainBotTwitch
         {
             if (_previousPoints != _currentPoints)
             {
+                LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
                 _previousPoints = _currentPoints;
                 await UpdateRemoteCountAsync();
             }
