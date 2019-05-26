@@ -46,7 +46,7 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnChannelSubscription += OnChannelSubscription;
 
-            _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(20));
+            _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
             _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
         }
