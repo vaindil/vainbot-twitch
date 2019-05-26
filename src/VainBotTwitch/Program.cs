@@ -44,8 +44,7 @@ namespace VainBotTwitch
             _api.Settings.ClientId = _config.TwitchClientId;
             _api.Settings.AccessToken = _config.TwitchOAuth;
             _client = new TwitchClient();
-            Console.WriteLine($"Twitch channel: {_config.TwitchChannel}");
-            _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth, _config.TwitchChannel));
+            _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth), _config.TwitchChannel);
 
             _client.AddChatCommandIdentifier('!');
             _client.OnChatCommandReceived += CommandHandler;
