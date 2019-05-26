@@ -27,9 +27,11 @@ namespace VainBotTwitch
 
 #pragma warning disable IDE0052 // Remove unread private members
         private readonly Timer _manualUpdateTimer;
+        private readonly Timer _batchSubUpdateTimer;
         private readonly Timer _pubSubReconnectTimer;
 #pragma warning restore IDE0052 // Remove unread private members
 
+        private int _previousPoints;
         private int _currentPoints;
 
         public SubPointsHandler(BotConfig config, TwitchClient client, SlothyService slothySvc)
@@ -45,6 +47,7 @@ namespace VainBotTwitch
             _pubSub.OnChannelSubscription += OnChannelSubscription;
 
             _manualUpdateTimer = new Timer(async _ => await ManualUpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(20));
+            _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
         }
 
@@ -145,7 +148,6 @@ namespace VainBotTwitch
         private async Task ManualUpdateAsync()
         {
             await GetCurrentPointsAsync();
-            await UpdateRemoteCountAsync();
         }
 
         private async Task GetCurrentPointsAsync()
@@ -159,6 +161,15 @@ namespace VainBotTwitch
             LogToConsole($"Points manually updated. Old score {_currentPoints} | new score {counts.Score}");
 
             _currentPoints = counts.Score;
+        }
+
+        private async Task HandleSubBatchAsync()
+        {
+            if (_previousPoints != _currentPoints)
+            {
+                _previousPoints = _currentPoints;
+                await UpdateRemoteCountAsync();
+            }
         }
 
         private async Task UpdateRemoteCountAsync()
