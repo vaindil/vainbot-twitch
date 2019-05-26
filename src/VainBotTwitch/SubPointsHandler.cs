@@ -112,13 +112,7 @@ namespace VainBotTwitch
             await UpdateRemoteCountAsync();
 
             if (e.Subscription.Context == "sub")
-            {
                 await NewSubDieRollAsync(e.Subscription.DisplayName, e.Subscription.UserId);
-            }
-            else if (e.Subscription.Context != "resub")
-            {
-                await NewSubDieRollAsync(e.Subscription.RecipientDisplayName, e.Subscription.RecipientId);
-            }
         }
 
         private async Task NewSubDieRollAsync(string displayName, string userId)
