@@ -37,6 +37,18 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
+            if (argCount == 1)
+            {
+                await GetSlothiesForUsernameAsync(e);
+                return;
+            }
+
+            if (argCount == 2 && !e.IsMod())
+            {
+                _client.SendMessage(e, "You're not a mod, you nerd.");
+                return;
+            }
+
             if (argCount == 2 && e.IsMod())
             {
                 await UpdateSlothiesAsync(e);
@@ -50,6 +62,20 @@ namespace VainBotTwitch.Commands
         {
             var count = _slothySvc.GetSlothyCount(e.Command.ChatMessage.UserId);
             _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}.");
+        }
+
+        private async Task GetSlothiesForUsernameAsync(OnChatCommandReceivedArgs e)
+        {
+            var userResponse = await _api.V5.Users.GetUserByNameAsync(e.Command.ArgumentsAsList[0]);
+            if (userResponse.Total != 1)
+            {
+                _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: That's not a valid user, you nerd.");
+                return;
+            }
+
+            var count = _slothySvc.GetSlothyCount(userResponse.Matches[0].Id);
+            _client.SendMessage(e,
+                $"{e.Command.ChatMessage.DisplayName}: {userResponse.Matches[0].DisplayName} has {count.ToDisplayString()}.");
         }
 
         private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
