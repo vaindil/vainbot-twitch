@@ -127,8 +127,8 @@ namespace VainBotTwitch
             }
             else if (roll == 20)
             {
-                msg += "You rolled a 20!!! Enjoy your bonus slothy.";
-                await _slothySvc.AddSlothiesAsync(userId, 1);
+                msg += "You rolled a 20!!! Enjoy your 20 bonus slothies.";
+                await _slothySvc.AddSlothiesAsync(userId, 20);
             }
             else if (roll == 8 || roll == 11 || roll == 18)
             {
