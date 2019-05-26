@@ -15,6 +15,7 @@ namespace VainBotTwitch.Classes
             OpenWeatherMapApiKey = config["openWeatherMapApiKey"];
             SubPointsAccessToken = config["subPointsAccessToken"];
             SubPointsRefreshToken = config["subPointsRefreshToken"];
+            SubPointsApiUrl = config["subPointsApiUrl"];
             SubPointsApiSecret = config["subPointsApiSecret"];
         }
 
@@ -35,6 +36,8 @@ namespace VainBotTwitch.Classes
         public string SubPointsAccessToken { get; set; }
 
         public string SubPointsRefreshToken { get; set; }
+
+        public string SubPointsApiUrl { get; set; }
 
         public string SubPointsApiSecret { get; set; }
     }

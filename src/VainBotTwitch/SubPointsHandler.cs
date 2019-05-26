@@ -212,7 +212,9 @@ namespace VainBotTwitch
 
         private async Task GetCurrentPointsAsync()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://api.twitch.tv/api/channels/crendor/subscriber_count");
+            var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://api.twitch.tv/api/channels/{_config.TwitchChannel}/subscriber_count");
             request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _config.SubPointsAccessToken);
 
             var response = await _httpClient.SendAsync(request);
@@ -235,7 +237,7 @@ namespace VainBotTwitch
 
         private async Task UpdateRemoteCountAsync()
         {
-            var request = new HttpRequestMessage(HttpMethod.Put, $"https://ws.vaindil.xyz/crendor/points/{_currentPoints}");
+            var request = new HttpRequestMessage(HttpMethod.Put, $"{_config.SubPointsApiUrl}/{_currentPoints}");
             request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 
             await _httpClient.SendAsync(request);
