@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using TwitchLib.Api;
+using TwitchLib.Api.V5.Models.Users;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using VainBotTwitch.Services;
@@ -66,16 +67,24 @@ namespace VainBotTwitch.Commands
 
         private async Task GetSlothiesForUsernameAsync(OnChatCommandReceivedArgs e)
         {
-            var userResponse = await _api.V5.Users.GetUserByNameAsync(e.Command.ArgumentsAsList[0]);
-            if (userResponse.Total != 1)
+            var username = e.Command.ArgumentsAsList[0].TrimStart('@');
+            User user;
+            try
+            {
+                var userResponse = await _api.V5.Users.GetUserByNameAsync(username);
+                if (userResponse.Total != 1)
+                    throw new Exception();
+
+                user = userResponse.Matches[0];
+            }
+            catch
             {
                 _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: That's not a valid user, you nerd.");
                 return;
             }
 
-            var count = _slothySvc.GetSlothyCount(userResponse.Matches[0].Id);
-            _client.SendMessage(e,
-                $"{e.Command.ChatMessage.DisplayName}: {userResponse.Matches[0].DisplayName} has {count.ToDisplayString()}.");
+            var count = _slothySvc.GetSlothyCount(user.Id);
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {user.DisplayName} has {count.ToDisplayString()}.");
         }
 
         private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
