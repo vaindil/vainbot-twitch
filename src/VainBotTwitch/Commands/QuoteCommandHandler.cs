@@ -75,12 +75,11 @@ namespace VainBotTwitch.Commands
             var message = "No quote with that ID exists.";
             if (quote != null)
             {
-                message = quote.Quote;
+                message = GetQuoteString(quote);
                 _lastQuoteId = quoteId;
             }
 
-            // function calls in interpolated strings, my favorite
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {GetQuoteString(quote)}");
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {message}");
         }
 
         private string GetQuoteString(QuoteRecord quote)
