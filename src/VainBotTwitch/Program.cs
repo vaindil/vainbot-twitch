@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Client;
@@ -84,6 +83,7 @@ namespace VainBotTwitch
 
                 case "quote":
                 case "quotes":
+                case "lastquote":
                     await _quoteHandler.HandleCommandAsync(e);
                     break;
 
