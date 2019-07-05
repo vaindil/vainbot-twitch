@@ -65,7 +65,7 @@ namespace VainBotTwitch.Commands
             var quote = _quotes[_rng.Next(_quotes.Count)];
             _lastQuoteId = quote.Id;
 
-            _client.SendMessage(e, $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}");
+            _client.SendMessage(e, GetQuoteString(quote));
         }
 
         private void GetQuoteById(int quoteId, OnChatCommandReceivedArgs e)
@@ -79,7 +79,13 @@ namespace VainBotTwitch.Commands
                 _lastQuoteId = quoteId;
             }
 
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {message}");
+            // function calls in interpolated strings, my favorite
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {GetQuoteString(quote)}");
+        }
+
+        private string GetQuoteString(QuoteRecord quote)
+        {
+            return $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}";
         }
 
         private void GetLastQuoteId(OnChatCommandReceivedArgs e)
