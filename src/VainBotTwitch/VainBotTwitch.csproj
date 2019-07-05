@@ -12,9 +12,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.2.0" />
-    <PackageReference Include="TwitchLib.Api" Version="3.0.6-CI-20190502-023428" />
-    <PackageReference Include="TwitchLib.Client" Version="3.0.6-CI-20190504-060134" />
-    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190422-060200" />
+    <PackageReference Include="TwitchLib.Api" Version="3.0.6-CI-20190602-190709" />
+    <PackageReference Include="TwitchLib.Client" Version="3.0.6-CI-20190603-060144" />
+    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190528-045916" />
   </ItemGroup>
 
   <ItemGroup>
