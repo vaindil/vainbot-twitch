@@ -6,6 +6,7 @@
   "twitchChannel": "",
   "twitchChannelId": "",
   "openWeatherMapApiKey": "",
+  "trackSubPoints": false,
   "subPointsAccessToken": "",
   "subPointsRefreshToken": "",
   "subPointsApiUrl": "", // without trailing slash

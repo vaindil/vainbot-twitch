@@ -33,7 +33,7 @@ namespace VainBotTwitch
 #pragma warning restore IDE0052 // Remove unread private members
 
         private readonly List<GiftedSubBatch> _giftedSubBatches = new List<GiftedSubBatch>();
-        private bool _areGiftSubBatchesBeingProcessed = false;
+        private bool _areGiftSubBatchesBeingProcessed;
 
         private int _previousPoints;
         private int _currentPoints;
@@ -50,9 +50,13 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnChannelSubscription += OnChannelSubscription;
 
-            _manualUpdateTimer = new Timer(async _ => await GetCurrentPointsAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
-            _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
+
+            if (_config.TrackSubPoints)
+            {
+                _manualUpdateTimer = new Timer(async _ => await GetCurrentPointsAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+                _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+            }
         }
 
         private void ReconnectPubSub()
@@ -165,11 +169,8 @@ namespace VainBotTwitch
             else
                 _giftedSubBatches.Add(new GiftedSubBatch(displayName, userId));
 
-            if (_giftedSubBatchTimer != null)
-            {
-                _giftedSubBatchTimer.Dispose();
-                _giftedSubBatchTimer = new Timer(async _ => await ProcessGiftSubBatchesAsync(), null, 10000, Timeout.Infinite);
-            }
+            _giftedSubBatchTimer?.Dispose();
+            _giftedSubBatchTimer = new Timer(async _ => await ProcessGiftSubBatchesAsync(), null, 10000, Timeout.Infinite);
         }
 
         private async Task ProcessGiftSubBatchesAsync()
@@ -212,6 +213,9 @@ namespace VainBotTwitch
 
         private async Task GetCurrentPointsAsync()
         {
+            if (!_config.TrackSubPoints)
+                return;
+
             var request = new HttpRequestMessage(
                 HttpMethod.Get,
                 $"https://api.twitch.tv/api/channels/{_config.TwitchChannel}/subscriber_count");
@@ -237,6 +241,9 @@ namespace VainBotTwitch
 
         private async Task UpdateRemoteCountAsync()
         {
+            if (!_config.TrackSubPoints)
+                return;
+
             var request = new HttpRequestMessage(HttpMethod.Put, $"{_config.SubPointsApiUrl}/{_currentPoints}");
             request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 

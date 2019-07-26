@@ -13,6 +13,7 @@ namespace VainBotTwitch.Classes
             TwitchChannel = config["twitchChannel"];
             TwitchChannelId = config["twitchChannelId"];
             OpenWeatherMapApiKey = config["openWeatherMapApiKey"];
+            TrackSubPoints = bool.Parse(config["trackSubPoints"]);
             SubPointsAccessToken = config["subPointsAccessToken"];
             SubPointsRefreshToken = config["subPointsRefreshToken"];
             SubPointsApiUrl = config["subPointsApiUrl"];
@@ -32,6 +33,8 @@ namespace VainBotTwitch.Classes
         public string TwitchChannelId { get; set; }
 
         public string OpenWeatherMapApiKey { get; set; }
+
+        public bool TrackSubPoints { get; set; }
 
         public string SubPointsAccessToken { get; set; }
 
