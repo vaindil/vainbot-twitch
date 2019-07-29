@@ -28,6 +28,9 @@ namespace VainBotTwitch.Services
 
         public async Task<decimal> AddSlothiesAsync(string userId, decimal count)
         {
+            if (userId == "45447900")
+                return 0M;
+
             var isNew = false;
             var record = _slothyRecords.Find(x => x.UserId == userId);
             if (record != null)
