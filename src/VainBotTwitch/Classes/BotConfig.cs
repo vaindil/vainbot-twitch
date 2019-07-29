@@ -18,6 +18,7 @@ namespace VainBotTwitch.Classes
             SubPointsRefreshToken = config["subPointsRefreshToken"];
             SubPointsApiUrl = config["subPointsApiUrl"];
             SubPointsApiSecret = config["subPointsApiSecret"];
+            StretchReminderFrequency = int.Parse(config["stretchReminderFrequency"]);
         }
 
         public string ConnectionString { get; set; }
@@ -43,5 +44,7 @@ namespace VainBotTwitch.Classes
         public string SubPointsApiUrl { get; set; }
 
         public string SubPointsApiSecret { get; set; }
+
+        public int StretchReminderFrequency { get; set; }
     }
 }

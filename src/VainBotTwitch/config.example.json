@@ -10,5 +10,6 @@
   "subPointsAccessToken": "",
   "subPointsRefreshToken": "",
   "subPointsApiUrl": "", // without trailing slash
-  "subPointsApiSecret": ""
+  "subPointsApiSecret": "",
+  "stretchReminderFrequency": 10 // in seconds
 }

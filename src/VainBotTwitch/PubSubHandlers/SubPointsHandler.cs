@@ -12,7 +12,7 @@ using TwitchLib.PubSub.Events;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Services;
 
-namespace VainBotTwitch
+namespace VainBotTwitch.PubSubHandlers
 {
     public class SubPointsHandler
     {
@@ -28,7 +28,6 @@ namespace VainBotTwitch
 #pragma warning disable IDE0052 // Remove unread private members
         private readonly Timer _manualUpdateTimer;
         private readonly Timer _batchSubUpdateTimer;
-        private readonly Timer _pubSubReconnectTimer;
         private Timer _giftedSubBatchTimer;
 #pragma warning restore IDE0052 // Remove unread private members
 
@@ -38,19 +37,14 @@ namespace VainBotTwitch
         private int _previousPoints;
         private int _currentPoints;
 
-        public SubPointsHandler(BotConfig config, TwitchClient client, SlothyService slothySvc)
+        public SubPointsHandler(BotConfig config, TwitchClient client, TwitchPubSub pubSub, SlothyService slothySvc)
         {
             _config = config;
             _client = client;
+            _pubSub = pubSub;
             _slothySvc = slothySvc;
 
-            _pubSub = new TwitchPubSub();
-            _pubSub.OnPubSubServiceConnected += PubSubConnected;
-            _pubSub.OnPubSubServiceClosed += PubSubClosed;
-            _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnChannelSubscription += OnChannelSubscription;
-
-            _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
 
             if (_config.TrackSubPoints)
             {
@@ -59,40 +53,11 @@ namespace VainBotTwitch
             }
         }
 
-        private void ReconnectPubSub()
-        {
-            _pubSub.OnPubSubServiceClosed -= PubSubClosed;
-
-            try
-            {
-                _pubSub.Disconnect();
-            }
-            catch
-            {
-            }
-
-            _pubSub.Connect();
-
-            _pubSub.OnPubSubServiceClosed += PubSubClosed;
-        }
-
-        private void PubSubConnected(object sender, EventArgs e)
-        {
-            _pubSub.ListenToSubscriptions(_config.TwitchChannelId);
-            _pubSub.SendTopics(_config.SubPointsAccessToken);
-            LogToConsole("PubSub connected and topics sent");
-        }
-
-        private void PubSubClosed(object sender, EventArgs e)
-        {
-            _pubSub.Connect();
-        }
-
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
             // a resub may or may not count toward current sub points because of the grace period,
             // so it has to be checked manually
-            if (e.Subscription.Context == "resub")
+            if (e.Subscription.Context == "resub" && _config.TrackSubPoints)
             {
                 await Task.Delay(10000);
                 await GetCurrentPointsAsync();
@@ -117,7 +82,7 @@ namespace VainBotTwitch
                     break;
             }
 
-            LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
+            Utils.LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
                 $"Old count: {oldScore} | New count: {_currentPoints}");
 
             await UpdateRemoteCountAsync();
@@ -198,7 +163,7 @@ namespace VainBotTwitch
             }
             catch (Exception ex)
             {
-                LogToConsole($"Error processing gift sub batch: {ex.Message}");
+                Utils.LogToConsole($"Error processing gift sub batch: {ex.Message}");
             }
             finally
             {
@@ -224,7 +189,7 @@ namespace VainBotTwitch
             var response = await _httpClient.SendAsync(request);
             var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
 
-            LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
+            Utils.LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
 
             _currentPoints = counts.Score;
         }
@@ -233,7 +198,7 @@ namespace VainBotTwitch
         {
             if (_previousPoints != _currentPoints)
             {
-                LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
+                Utils.LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
                 _previousPoints = _currentPoints;
                 await UpdateRemoteCountAsync();
             }
@@ -248,11 +213,6 @@ namespace VainBotTwitch
             request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 
             await _httpClient.SendAsync(request);
-        }
-
-        private void LogToConsole(string message)
-        {
-            Console.WriteLine($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff}: {message}");
         }
 
         private class GiftedSubBatch

@@ -46,6 +46,11 @@ namespace VainBotTwitch
                 || e.Command.ChatMessage.IsModerator;
         }
 
+        public static void LogToConsole(string message)
+        {
+            Console.WriteLine($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff}: {message}");
+        }
+
         public static bool TryParseSlothyBetType(string str, out SlothyBetType type)
         {
             str = str.ToLower();

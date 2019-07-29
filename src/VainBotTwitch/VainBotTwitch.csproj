@@ -14,7 +14,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.2.4" />
     <PackageReference Include="TwitchLib.Api" Version="3.0.6-CI-20190707-175305" />
     <PackageReference Include="TwitchLib.Client" Version="3.0.6-CI-20190707-175300" />
-    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190707-175203" />
+    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190729-060114" />
   </ItemGroup>
 
   <ItemGroup>

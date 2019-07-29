@@ -1,11 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using TwitchLib.PubSub;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
+using VainBotTwitch.PubSubHandlers;
 using VainBotTwitch.Services;
 
 namespace VainBotTwitch
@@ -15,6 +19,7 @@ namespace VainBotTwitch
         private BotConfig _config;
         private TwitchClient _client;
         private TwitchAPI _api;
+        private TwitchPubSub _pubSub;
 
         private SlothyService _slothySvc;
 
@@ -27,6 +32,8 @@ namespace VainBotTwitch
 
 #pragma warning disable IDE0052 // Remove unread private members
         private SubPointsHandler _subPointsHandler;
+        private StretchTimerHandler _stretchTimerHandler;
+        private Timer _pubSubReconnectTimer;
 #pragma warning restore IDE0052 // Remove unread private members
 
         public static async Task Main() => await new Program().RealMainAsync();
@@ -48,6 +55,8 @@ namespace VainBotTwitch
             _client.AddChatCommandIdentifier('!');
             _client.OnChatCommandReceived += CommandHandler;
 
+            _pubSub = new TwitchPubSub();
+
             _slothySvc = new SlothyService();
             await _slothySvc.InitializeAsync();
 
@@ -64,7 +73,14 @@ namespace VainBotTwitch
 
             _client.Connect();
 
-            _subPointsHandler = new SubPointsHandler(_config, _client, _slothySvc);
+            _pubSub.OnPubSubServiceConnected += PubSubConnected;
+            _pubSub.OnPubSubServiceClosed += PubSubClosed;
+            _pubSub.OnPubSubServiceError += PubSubClosed;
+
+            _subPointsHandler = new SubPointsHandler(_config, _client, _pubSub, _slothySvc);
+            _stretchTimerHandler = new StretchTimerHandler(_config, _client, _pubSub);
+
+            _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));
 
             await Task.Delay(-1);
         }
@@ -107,6 +123,36 @@ namespace VainBotTwitch
                     await _woppyHandler.HandleCommandAsync(e);
                     break;
             }
+        }
+
+        private void ReconnectPubSub()
+        {
+            _pubSub.OnPubSubServiceClosed -= PubSubClosed;
+
+            try
+            {
+                _pubSub.Disconnect();
+            }
+            catch
+            {
+            }
+
+            _pubSub.Connect();
+
+            _pubSub.OnPubSubServiceClosed += PubSubClosed;
+        }
+
+        private void PubSubConnected(object sender, EventArgs e)
+        {
+            _pubSub.ListenToSubscriptions(_config.TwitchChannelId);
+            _pubSub.ListenToVideoPlayback(_config.TwitchChannel);
+            _pubSub.SendTopics(_config.SubPointsAccessToken);
+            Utils.LogToConsole("PubSub connected and topics sent");
+        }
+
+        private void PubSubClosed(object sender, EventArgs e)
+        {
+            _pubSub.Connect();
         }
     }
 }
