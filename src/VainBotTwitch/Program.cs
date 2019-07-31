@@ -6,6 +6,7 @@ using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using TwitchLib.Communication.Events;
 using TwitchLib.PubSub;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
@@ -52,8 +53,16 @@ namespace VainBotTwitch
             _client = new TwitchClient();
             _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth), _config.TwitchChannel);
 
-            _client.AddChatCommandIdentifier('!');
+            _client.OnConnected += (_, __) => Utils.LogToConsole("Connected to chat");
+            _client.OnJoinedChannel += (_, e) => Utils.LogToConsole($"Joined chat channel {e.Channel}");
+
             _client.OnChatCommandReceived += CommandHandler;
+            _client.OnConnectionError += ChatConnectionError;
+            _client.OnDisconnected += ChatDisconnected;
+            _client.OnError += ChatError;
+            _client.OnIncorrectLogin += ChatIncorrectLogin;
+
+            _client.AddChatCommandIdentifier('!');
 
             _pubSub = new TwitchPubSub();
 
@@ -71,7 +80,7 @@ namespace VainBotTwitch
             _slothFactHandler = new SlothFactCommandHandler(_client);
             _woppyHandler = new WoppyCommandHandler(_config, _client);
 
-            _client.Connect();
+            ConnectChat();
 
             _pubSub.OnPubSubServiceConnected += PubSubConnected;
             _pubSub.OnPubSubServiceClosed += PubSubClosed;
@@ -123,6 +132,36 @@ namespace VainBotTwitch
                     await _woppyHandler.HandleCommandAsync(e);
                     break;
             }
+        }
+
+        private void ConnectChat()
+        {
+            Utils.LogToConsole("Connecting to chat");
+            _client.Connect();
+        }
+
+        private void ChatConnectionError(object sender, OnConnectionErrorArgs e)
+        {
+            Utils.LogToConsole($"Chat connection error: {e.Error.Message}");
+            ConnectChat();
+        }
+
+        private void ChatDisconnected(object sender, OnDisconnectedEventArgs e)
+        {
+            Utils.LogToConsole("Chat disconnected");
+            ConnectChat();
+        }
+
+        private void ChatError(object sender, OnErrorEventArgs e)
+        {
+            Utils.LogToConsole($"Chat error: {e.Exception.Message}");
+            ConnectChat();
+        }
+
+        private void ChatIncorrectLogin(object sender, OnIncorrectLoginArgs e)
+        {
+            Utils.LogToConsole($"Chat incorrect login: {e.Exception.Message}");
+            ConnectChat();
         }
 
         private void ReconnectPubSub()
