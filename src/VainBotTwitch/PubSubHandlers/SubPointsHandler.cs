@@ -82,8 +82,11 @@ namespace VainBotTwitch.PubSubHandlers
                     break;
             }
 
-            Utils.LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
-                $"Old count: {oldScore} | New count: {_currentPoints}");
+            if (_config.VerboseSubPointsLogging)
+            {
+                Utils.LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
+                    $"Old count: {oldScore} | New count: {_currentPoints}");
+            }
 
             await UpdateRemoteCountAsync();
 
@@ -189,7 +192,8 @@ namespace VainBotTwitch.PubSubHandlers
             var response = await _httpClient.SendAsync(request);
             var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
 
-            Utils.LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
+            if (_config.VerboseSubPointsLogging)
+                Utils.LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
 
             _currentPoints = counts.Score;
         }
@@ -198,7 +202,9 @@ namespace VainBotTwitch.PubSubHandlers
         {
             if (_previousPoints != _currentPoints)
             {
-                Utils.LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
+                if (_config.VerboseSubPointsLogging)
+                    Utils.LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
+
                 _previousPoints = _currentPoints;
                 await UpdateRemoteCountAsync();
             }
@@ -264,7 +270,7 @@ namespace VainBotTwitch.PubSubHandlers
         private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync(string cursor = null)
         {
             // endpoint isn't supported by library, so query it manually
-            var url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=7555574&first=100";
+            var url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=b_id&first=100";
             if (cursor != null)
                 url += $"&after={cursor}";
 
