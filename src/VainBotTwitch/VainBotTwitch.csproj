@@ -2,19 +2,19 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <CodeAnalysisRuleSet>..\..\VainBotTwitch.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.2.4" />
-    <PackageReference Include="TwitchLib.Api" Version="3.0.6-CI-20190707-175305" />
-    <PackageReference Include="TwitchLib.Client" Version="3.0.6-CI-20190707-175300" />
-    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190729-060114" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3-beta2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.0.1" />
+    <PackageReference Include="TwitchLib.Api" Version="3.0.6-CI-20191013-060230" />
+    <PackageReference Include="TwitchLib.Client" Version="3.0.6-CI-20190916-073325" />
+    <PackageReference Include="TwitchLib.PubSub" Version="3.0.6-CI-20190920-073200" />
   </ItemGroup>
 
   <ItemGroup>
