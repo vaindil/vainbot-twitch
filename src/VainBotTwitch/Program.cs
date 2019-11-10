@@ -119,6 +119,7 @@ namespace VainBotTwitch
 
                 case "slothybet":
                 case "slothiebet":
+                case "bet":
                     await _slothyBetCommandHandler.HandleCommandAsync(e);
                     break;
 

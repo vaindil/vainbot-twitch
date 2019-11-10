@@ -53,7 +53,7 @@ namespace VainBotTwitch
 
         public static bool TryParseSlothyBetType(string str, out SlothyBetType type)
         {
-            str = str.ToLower();
+            str = str.ToLowerInvariant();
 
             type = SlothyBetType.Win;
 
