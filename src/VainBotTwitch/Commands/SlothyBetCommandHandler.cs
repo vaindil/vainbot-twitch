@@ -121,7 +121,6 @@ namespace VainBotTwitch.Commands
                         return;
 
                     case "reverse":
-                    case "undo":
                         await ProcessWrongCommandAsync(e);
                         return;
 
@@ -257,6 +256,7 @@ namespace VainBotTwitch.Commands
             }
 
             _canProcessBets = false;
+            _canProcessReversal = false;
 
             _client.SendMessage(e, "Processing bets...");
 
@@ -276,6 +276,8 @@ namespace VainBotTwitch.Commands
             _previousBetWinType = type;
 
             _slothyBetRecords.Clear();
+
+            _canProcessReversal = true;
         }
 
         private async Task ProcessWrongCommandAsync(OnChatCommandReceivedArgs e)
@@ -324,7 +326,9 @@ namespace VainBotTwitch.Commands
 
             _canProcessBets = false;
 
-            _previousSlothyBetRecords = _slothyBetRecords.ToList();
+            _previousSlothyBetRecords = null;
+            _previousBetWinType = null;
+
             _slothyBetRecords.Clear();
             _client.SendMessage(e, "Game was forfeited. All bets have been canceled.");
         }
