@@ -16,6 +16,8 @@ namespace VainBotTwitch
         public DbSet<SlothyRecord> Slothies { get; set; }
         public DbSet<MultiStreamer> MultiStreamers { get; set; }
         public DbSet<QuoteRecord> Quotes { get; set; }
+        public DbSet<SlothyBetRecord> SlothyBetRecords { get; set; }
+        public DbSet<KeyValue> KeyValues { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +26,8 @@ namespace VainBotTwitch
             modelBuilder.ApplyConfiguration(new SlothyRecordConfig());
             modelBuilder.ApplyConfiguration(new MultiStreamerConfig());
             modelBuilder.ApplyConfiguration(new QuoteRecordConfig());
+            modelBuilder.ApplyConfiguration(new SlothyBetRecordConfig());
+            modelBuilder.ApplyConfiguration(new KeyValueConfig());
         }
     }
 }

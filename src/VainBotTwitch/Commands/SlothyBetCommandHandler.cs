@@ -12,23 +12,48 @@ namespace VainBotTwitch.Commands
     public class SlothyBetCommandHandler
     {
         private readonly TwitchClient _client;
+        private readonly SlothyBetService _betSvc;
         private readonly SlothyService _slothySvc;
 
-        private readonly List<SlothyBetRecord> _slothyBetRecords;
         private List<SlothyBetRecord> _previousSlothyBetRecords;
         private SlothyBetType? _previousBetWinType;
         private bool _isBettingOpen;
         private bool _canProcessBets;
         private bool _canProcessReversal;
 
-        public SlothyBetCommandHandler(TwitchClient client, SlothyService slothySvc)
+        public SlothyBetCommandHandler(TwitchClient client, SlothyBetService betSvc, SlothyService slothySvc)
         {
             _client = client;
+            _betSvc = betSvc;
             _slothySvc = slothySvc;
 
-            _slothyBetRecords = new List<SlothyBetRecord>();
             _isBettingOpen = false;
-            _canProcessReversal = true;
+            _canProcessBets = false;
+            _canProcessReversal = false;
+        }
+
+        public async Task InitializeAsync()
+        {
+            var kv = await KeyValueService.GetByKeyAsync(nameof(SlothyBetStatus));
+
+            SlothyBetStatus status;
+            if (kv?.Value == null)
+                status = SlothyBetStatus.Closed;
+            else
+                status = (SlothyBetStatus)Enum.Parse(typeof(SlothyBetStatus), kv.Value, true);
+
+            switch (status)
+            {
+                case SlothyBetStatus.Open:
+                    _isBettingOpen = true;
+                    _canProcessBets = false;
+                    break;
+
+                case SlothyBetStatus.InProgress:
+                    _isBettingOpen = false;
+                    _canProcessBets = true;
+                    break;
+            }
         }
 
         public async Task HandleCommandAsync(OnChatCommandReceivedArgs e)
@@ -81,9 +106,9 @@ namespace VainBotTwitch.Commands
                 try
                 {
                     if (Utils.TryParseSlothyBetType(arg1, out var betType))
-                        TakeBet(e, amount, betType);
+                        await TakeBetAsync(e, amount, betType);
                     else if (Utils.TryParseSlothyBetType(arg2, out betType))
-                        TakeBet(e, amount, betType);
+                        await TakeBetAsync(e, amount, betType);
                     else
                         throw new Exception();
                 }
@@ -101,12 +126,12 @@ namespace VainBotTwitch.Commands
                 {
                     case "open":
                     case "opened":
-                        OpenBetting(e);
+                        await OpenBettingAsync(e);
                         return;
 
                     case "close":
                     case "closed":
-                        CloseBetting(e);
+                        await CloseBettingAsync(e);
                         return;
 
                     case "win":
@@ -128,7 +153,8 @@ namespace VainBotTwitch.Commands
                     case "forfeited":
                     case "forfeitted":
                     case "draw":
-                        ProcessForfeit(e);
+                    case "void":
+                        await ProcessForfeitAsync(e);
                         return;
                 }
             }
@@ -140,7 +166,7 @@ namespace VainBotTwitch.Commands
         {
             if (_isBettingOpen)
             {
-                var record = _slothyBetRecords.Find(x => x.UserId == e.Command.ChatMessage.UserId);
+                var record = _betSvc.GetCurrentBet(e.Command.ChatMessage.UserId);
                 if (record != null)
                 {
                     _client.SendMessage(e, $"{e.Command.ChatMessage.Username} bet {record.Amount.ToDisplayString()} " +
@@ -151,9 +177,9 @@ namespace VainBotTwitch.Commands
                     _client.SendMessage(e, $"{e.Command.ChatMessage.Username} has not submitted a bet.");
                 }
             }
-            else if (_slothyBetRecords.Count > 0)
+            else if (_betSvc.BetCount > 0)
             {
-                var record = _slothyBetRecords.Find(x => x.UserId == e.Command.ChatMessage.UserId);
+                var record = _betSvc.GetCurrentBet(e.Command.ChatMessage.UserId);
                 if (record != null)
                 {
                     _client.SendMessage(e, $"{e.Command.ChatMessage.Username} bet {record.Amount.ToDisplayString()} " +
@@ -170,7 +196,7 @@ namespace VainBotTwitch.Commands
             }
         }
 
-        private void TakeBet(OnChatCommandReceivedArgs e, decimal amount, SlothyBetType type)
+        private async Task TakeBetAsync(OnChatCommandReceivedArgs e, decimal amount, SlothyBetType type)
         {
             var msgBegin = $"@{e.Command.ChatMessage.DisplayName}:";
 
@@ -199,26 +225,17 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var existingRecord = _slothyBetRecords.Find(x => x.UserId == e.Command.ChatMessage.UserId);
-            if (existingRecord != null)
-            {
-                _client.SendMessage(e, $"{msgBegin} You already placed a bet this round.");
-                return;
-            }
-
-            var record = new SlothyBetRecord
+            await _betSvc.AddOrUpdateBetAsync(new SlothyBetRecord
             {
                 UserId = e.Command.ChatMessage.UserId,
                 Amount = amount,
                 BetType = type
-            };
-
-            _slothyBetRecords.Add(record);
+            });
 
             _client.SendMessage(e, $"{msgBegin} Bet placed.");
         }
 
-        private void OpenBetting(OnChatCommandReceivedArgs e)
+        private async Task OpenBettingAsync(OnChatCommandReceivedArgs e)
         {
             if (_isBettingOpen)
             {
@@ -228,10 +245,12 @@ namespace VainBotTwitch.Commands
 
             _isBettingOpen = true;
             _canProcessBets = false;
+            await KeyValueService.CreateOrUpdateAsync(nameof(SlothyBetStatus), nameof(SlothyBetStatus.Open));
+
             _client.SendMessage(e, "Betting is now open.");
         }
 
-        private void CloseBetting(OnChatCommandReceivedArgs e)
+        private async Task CloseBettingAsync(OnChatCommandReceivedArgs e)
         {
             if (!_isBettingOpen)
             {
@@ -241,6 +260,8 @@ namespace VainBotTwitch.Commands
 
             _isBettingOpen = false;
             _canProcessBets = true;
+
+            await KeyValueService.CreateOrUpdateAsync(nameof(SlothyBetStatus), nameof(SlothyBetStatus.InProgress));
 
             var stats = CalculateStats();
             _client.SendMessage(e, $"Betting is now closed. | {stats}");
@@ -260,7 +281,9 @@ namespace VainBotTwitch.Commands
 
             _client.SendMessage(e, "Processing bets...");
 
-            foreach (var bet in _slothyBetRecords)
+            var currentBets = _betSvc.GetAllCurrentBets();
+
+            foreach (var bet in currentBets)
             {
                 if (bet.BetType == type)
                     await _slothySvc.AddSlothiesAsync(bet.UserId, bet.Amount);
@@ -270,14 +293,15 @@ namespace VainBotTwitch.Commands
 
             var stats = CalculateStats();
 
-            _client.SendMessage(e, $"Bets processed. | {stats}");
-
-            _previousSlothyBetRecords = _slothyBetRecords.ToList();
+            _previousSlothyBetRecords = currentBets;
             _previousBetWinType = type;
 
-            _slothyBetRecords.Clear();
+            await _betSvc.ClearBetsAsync();
+            await KeyValueService.CreateOrUpdateAsync(nameof(SlothyBetStatus), nameof(SlothyBetStatus.Closed));
 
             _canProcessReversal = true;
+
+            _client.SendMessage(e, $"Bets processed. | {stats}");
         }
 
         private async Task ProcessWrongCommandAsync(OnChatCommandReceivedArgs e)
@@ -316,7 +340,7 @@ namespace VainBotTwitch.Commands
             _canProcessReversal = true;
         }
 
-        private void ProcessForfeit(OnChatCommandReceivedArgs e)
+        private async Task ProcessForfeitAsync(OnChatCommandReceivedArgs e)
         {
             if (!_canProcessBets)
             {
@@ -329,14 +353,14 @@ namespace VainBotTwitch.Commands
             _previousSlothyBetRecords = null;
             _previousBetWinType = null;
 
-            _slothyBetRecords.Clear();
+            await _betSvc.ClearBetsAsync();
             _client.SendMessage(e, "Game was forfeited. All bets have been canceled.");
         }
 
         private string CalculateStats(List<SlothyBetRecord> records = null)
         {
             if (records == null)
-                records = _slothyBetRecords;
+                records = _betSvc.GetAllCurrentBets();
 
             var winBets = records.FindAll(x => x.BetType == SlothyBetType.Win);
             var loseBets = records.FindAll(x => x.BetType == SlothyBetType.Lose);

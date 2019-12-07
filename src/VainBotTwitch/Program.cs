@@ -23,6 +23,7 @@ namespace VainBotTwitch
         private TwitchPubSub _pubSub;
 
         private SlothyService _slothySvc;
+        private SlothyBetService _betSvc;
 
         private MultitwitchCommandHandler _multiHandler;
         private QuoteCommandHandler _quoteHandler;
@@ -75,10 +76,15 @@ namespace VainBotTwitch
             _quoteHandler = new QuoteCommandHandler(_client);
             await _quoteHandler.InitializeAsync();
 
+            _betSvc = new SlothyBetService();
+            await _betSvc.InitializeAsync();
+
             _slothyHandler = new SlothyCommandHandler(_client, _api, _slothySvc);
-            _slothyBetCommandHandler = new SlothyBetCommandHandler(_client, _slothySvc);
             _slothFactHandler = new SlothFactCommandHandler(_client);
             _woppyHandler = new WoppyCommandHandler(_config, _client);
+
+            _slothyBetCommandHandler = new SlothyBetCommandHandler(_client, _betSvc, _slothySvc);
+            await _slothyBetCommandHandler.InitializeAsync();
 
             ConnectChat();
 
