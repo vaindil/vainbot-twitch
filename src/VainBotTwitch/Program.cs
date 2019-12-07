@@ -145,6 +145,8 @@ namespace VainBotTwitch
         {
             Utils.LogToConsole("Connecting to chat");
 
+            _client.OnDisconnected -= ChatDisconnected;
+
             try
             {
                 _client.Disconnect();
@@ -153,6 +155,7 @@ namespace VainBotTwitch
             {
             }
 
+            _client.OnDisconnected += ChatDisconnected;
             _client.Connect();
         }
 
