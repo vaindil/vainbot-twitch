@@ -144,6 +144,15 @@ namespace VainBotTwitch
         private void ConnectChat()
         {
             Utils.LogToConsole("Connecting to chat");
+
+            try
+            {
+                _client.Disconnect();
+            }
+            catch
+            {
+            }
+
             _client.Connect();
         }
 
