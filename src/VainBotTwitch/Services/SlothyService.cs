@@ -11,10 +11,9 @@ namespace VainBotTwitch.Services
 
         public async Task InitializeAsync()
         {
-            using (var db = new VbContext())
-            {
-                _slothyRecords = await db.Slothies.ToListAsync();
-            }
+            using var db = new VbContext();
+
+            _slothyRecords = await db.Slothies.ToListAsync();
         }
 
         public decimal GetSlothyCount(string userId)
