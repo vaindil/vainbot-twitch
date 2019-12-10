@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -9,8 +8,6 @@ namespace VainBotTwitch
 {
     public static class Utils
     {
-        private static readonly Random _rng = new Random();
-
         public static JoinedChannel GetChannel(this OnChatCommandReceivedArgs e, TwitchClient client)
         {
             return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
@@ -18,7 +15,6 @@ namespace VainBotTwitch
 
         public static void SendMessage(this TwitchClient client, OnChatCommandReceivedArgs e, string message)
         {
-            message += $" {RandEmote()}";
             client.SendMessage(e.Command.ChatMessage.Channel, message);
         }
 
@@ -32,12 +28,6 @@ namespace VainBotTwitch
                 display += "slothies";
 
             return display;
-        }
-
-        public static string RandEmote()
-        {
-            var r = _rng.Next(0, _emotes.Count);
-            return _emotes[r];
         }
 
         public static bool IsMod(this OnChatCommandReceivedArgs e)
@@ -80,41 +70,5 @@ namespace VainBotTwitch
             else
                 return num.ToString();
         }
-
-        private static readonly List<string> _emotes = new List<string>
-        {
-            "4Head",
-            "BabyRage",
-            "BCWarrior",
-            "BloodTrail",
-            "CoolCat",
-            "CorgiDerp",
-            "CurseLit",
-            "DansGame",
-            "EleGiggle",
-            "FailFish",
-            "FrankerZ",
-            "GivePLZ",
-            "HeyGuys",
-            "Jebaited",
-            "Kappa",
-            "KappaPride",
-            "KappaRoss",
-            "Keepo",
-            "Kreygasm",
-            "MingLee",
-            "MrDestructoid",
-            "OhMyDog",
-            "PogChamp",
-            "ResidentSleeper",
-            "SeriousSloth",
-            "SMOrc",
-            "StinkyCheese",
-            "SwiftRage",
-            "TakeNRG",
-            "TheIlluminati",
-            "VoHiYo",
-            "WutFace"
-        };
     }
 }
