@@ -24,12 +24,10 @@ namespace VainBotTwitch.Commands
 
         public async Task InitializeAsync()
         {
-            using (var db = new VbContext())
-            {
-                _quotes = await db.Quotes
-                    .OrderBy(x => x.Id)
-                    .ToListAsync();
-            }
+            using var db = new VbContext();
+            _quotes = await db.Quotes
+                .OrderBy(x => x.Id)
+                .ToListAsync();
         }
 
         public async Task HandleCommandAsync(OnChatCommandReceivedArgs e)
@@ -37,6 +35,13 @@ namespace VainBotTwitch.Commands
             if (string.Equals(e.Command.CommandText, "lastquote", StringComparison.InvariantCultureIgnoreCase))
             {
                 GetLastQuoteId(e);
+                return;
+            }
+
+            if (e.IsMod() && string.Equals(e.Command.CommandText, "dbupdate", StringComparison.InvariantCultureIgnoreCase))
+            {
+                await InitializeAsync();
+                _client.SendMessage(e, "Quotes updated.");
                 return;
             }
 
