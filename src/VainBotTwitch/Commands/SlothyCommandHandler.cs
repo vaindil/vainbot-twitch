@@ -62,7 +62,7 @@ namespace VainBotTwitch.Commands
         private void GetSlothies(OnChatCommandReceivedArgs e)
         {
             var count = _slothySvc.GetSlothyCount(e.Command.ChatMessage.UserId);
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {count.ToDisplayString()}.");
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {GetSlothyDisplayString(count)}.");
         }
 
         private async Task GetSlothiesForUsernameAsync(OnChatCommandReceivedArgs e)
@@ -84,7 +84,7 @@ namespace VainBotTwitch.Commands
             }
 
             var count = _slothySvc.GetSlothyCount(user.Id);
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {user.DisplayName} has {count.ToDisplayString()}.");
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {user.DisplayName} has {GetSlothyDisplayString(count)}.");
         }
 
         private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
@@ -143,6 +143,14 @@ namespace VainBotTwitch.Commands
             count = await _slothySvc.AddSlothiesAsync(userId, count);
 
             _client.SendMessage(e, $"{origUsername} now has {count.ToDisplayString()}.");
+        }
+
+        private string GetSlothyDisplayString(decimal count)
+        {
+            if (count == decimal.MinValue)
+                return "an uncountable number of slothies";
+
+            return count.ToDisplayString();
         }
     }
 }
