@@ -115,6 +115,7 @@ namespace VainBotTwitch
                 case "quote":
                 case "quotes":
                 case "lastquote":
+                case "dbupdate":
                     await _quoteHandler.HandleCommandAsync(e);
                     break;
 
