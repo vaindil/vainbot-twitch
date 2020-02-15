@@ -52,7 +52,7 @@ namespace VainBotTwitch
             _api.Settings.ClientId = _config.TwitchClientId;
             _api.Settings.AccessToken = _config.TwitchOAuth;
             _client = new TwitchClient();
-            _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth), _config.TwitchChannel);
+            _client.Initialize(new ConnectionCredentials(_config.TwitchUsername, _config.TwitchOAuth));
 
             _client.OnConnected += (_, __) => Utils.LogToConsole("Connected to chat");
             _client.OnJoinedChannel += (_, e) => Utils.LogToConsole($"Joined chat channel {e.Channel}");
@@ -157,6 +157,7 @@ namespace VainBotTwitch
 
             _client.OnDisconnected += ChatDisconnected;
             _client.Connect();
+            _client.JoinChannel(_config.TwitchChannel);
         }
 
         private void ChatConnectionError(object sender, OnConnectionErrorArgs e)
