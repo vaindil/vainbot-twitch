@@ -41,7 +41,7 @@ namespace VainBotTwitch
             Console.WriteLine($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff}: {message}");
         }
 
-        public static bool TryParseSlothyBetType(string str, out SlothyBetType type)
+        public static bool TryParseSlothyBetType(string str, bool includeVoid, out SlothyBetType type)
         {
             str = str.ToLowerInvariant();
 
@@ -55,6 +55,13 @@ namespace VainBotTwitch
             if (str == "lose" || str == "loss" || str == "lost")
             {
                 type = SlothyBetType.Lose;
+                return true;
+            }
+
+            if (includeVoid && (str == "draw" || str == "forfeit" || str == "forfeited" || str == "forfeitted" ||
+                str == "null" || str == "void"))
+            {
+                type = SlothyBetType.Void;
                 return true;
             }
 

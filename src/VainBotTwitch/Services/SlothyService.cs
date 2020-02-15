@@ -18,6 +18,9 @@ namespace VainBotTwitch.Services
 
         public decimal GetSlothyCount(string userId)
         {
+            if (userId == "45447900")
+                return decimal.MinValue;
+
             var record = _slothyRecords.Find(x => x.UserId == userId);
             if (record != null)
                 return record.Count;
@@ -27,9 +30,6 @@ namespace VainBotTwitch.Services
 
         public async Task<decimal> AddSlothiesAsync(string userId, decimal count)
         {
-            if (userId == "45447900")
-                return decimal.MinValue;
-
             var isNew = false;
             var record = _slothyRecords.Find(x => x.UserId == userId);
             if (record != null)

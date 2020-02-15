@@ -22,7 +22,8 @@ namespace VainBotTwitch.Classes
     public enum SlothyBetType
     {
         Win,
-        Lose
+        Lose,
+        Void
     }
 
     public enum SlothyBetStatus
