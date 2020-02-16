@@ -374,61 +374,61 @@ namespace VainBotTwitch.Commands
 
             _client.SendMessage(e, "Correcting previous bet results...");
 
-            if (_previousBetWinType == SlothyBetType.Win)
+            foreach (var bet in _previousSlothyBetRecords)
             {
-                // was a win but should have been a loss, so subtract 2*bet amount
-                if (correctType == SlothyBetType.Lose)
+                if (_previousBetWinType == SlothyBetType.Win)
                 {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
+                    // previously +x for correct bet, so adjustment is -2x for being incorrect
+                    if (correctType == SlothyBetType.Lose && bet.BetType == SlothyBetType.Win)
                         await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - (2 * bet.Amount));
-                    }
-                }
-                // was a win but should have been voided, so subtract bet amount
-                else
-                {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
-                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
-                    }
-                }
-            }
-            else if (_previousBetWinType == SlothyBetType.Lose)
-            {
-                // was a loss but should have been a win, so add 2*bet amount
-                if (correctType == SlothyBetType.Win)
-                {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
+
+                    // previously -x for incorrect bet, so adjustment is +2x for being correct
+                    else if (correctType == SlothyBetType.Lose && bet.BetType == SlothyBetType.Lose)
                         await _slothySvc.AddSlothiesAsync(bet.UserId, 2 * bet.Amount);
-                    }
-                }
-                // was a loss but should have been voided, so add bet amount
-                else
-                {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
+
+                    // previously +x for correct bet, so adjustment is -x to void
+                    else if (correctType == SlothyBetType.Void && bet.BetType == SlothyBetType.Win)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
+
+                    // previously -x for incorrect bet, so adjustment is +x to void
+                    else if (correctType == SlothyBetType.Void && bet.BetType == SlothyBetType.Lose)
                         await _slothySvc.AddSlothiesAsync(bet.UserId, bet.Amount);
-                    }
                 }
-            }
-            else
-            {
-                // was voided but should have been a win, so add bet amount
-                if (correctType == SlothyBetType.Win)
+                else if (_previousBetWinType == SlothyBetType.Lose)
                 {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
+                    // previously -x for incorrect bet, so adjustment is +2x for being correct
+                    if (correctType == SlothyBetType.Win && bet.BetType == SlothyBetType.Win)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 2 * bet.Amount);
+
+                    // previously +x for correct bet, so adjustment is -2x for being incorrect
+                    else if (correctType == SlothyBetType.Win && bet.BetType == SlothyBetType.Lose)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - (2 * bet.Amount));
+
+                    // previously -x for incorrect bet, so adjustment is +x to void
+                    else if (correctType == SlothyBetType.Void && bet.BetType == SlothyBetType.Win)
                         await _slothySvc.AddSlothiesAsync(bet.UserId, bet.Amount);
-                    }
+
+                    // previously +x for correct bet, so adjustment is -x to void
+                    else if (correctType == SlothyBetType.Void && bet.BetType == SlothyBetType.Lose)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
                 }
-                // was voided but should have been a loss, so subtract bet amount
-                else
+                else if (_previousBetWinType == SlothyBetType.Void)
                 {
-                    foreach (var bet in _previousSlothyBetRecords)
-                    {
-                        await _slothySvc.AddSlothiesAsync(bet.UserId, -bet.Amount);
-                    }
+                    // previously 0 for voided bet, so adjustment is +x for being correct
+                    if (correctType == SlothyBetType.Win && bet.BetType == SlothyBetType.Win)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, bet.Amount);
+
+                    // previously 0 for voided bet, so adjustment is -x for being incorrect
+                    else if (correctType == SlothyBetType.Win && bet.BetType == SlothyBetType.Lose)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
+
+                    // previously 0 for voided bet, so adjustment is -x to void
+                    else if (correctType == SlothyBetType.Lose && bet.BetType == SlothyBetType.Win)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, 0 - bet.Amount);
+
+                    // previously 0 for voided bet, so adjustment is +x to void
+                    else if (correctType == SlothyBetType.Lose && bet.BetType == SlothyBetType.Lose)
+                        await _slothySvc.AddSlothiesAsync(bet.UserId, bet.Amount);
                 }
             }
 
