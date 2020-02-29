@@ -192,7 +192,7 @@ namespace VainBotTwitch
         private async void ChatIncorrectLogin(object sender, OnIncorrectLoginArgs e)
         {
             Utils.LogToConsole($"Chat incorrect login: {e.Exception.Message}");
-            await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing} Incorrect chat credentials for Twitch bot", _config.DiscordWebhookUrl);
+            await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: Incorrect chat credentials for Twitch bot", _config.DiscordWebhookUrl);
         }
 
         private void ReconnectPubSub()
@@ -225,7 +225,7 @@ namespace VainBotTwitch
             Utils.LogToConsole($"Listen response | success: {e.Successful} | topic: {e.Topic} | response: {e.Response.Error}");
 
             if (!e.Successful)
-                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing} Error in ListenResponse, Twitch bot", _config.DiscordWebhookUrl);
+                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: Error in ListenResponse, Twitch bot", _config.DiscordWebhookUrl);
         }
 
         private void PubSubClosed(object sender, EventArgs e)
