@@ -8,6 +8,7 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
 using TwitchLib.PubSub;
+using TwitchLib.PubSub.Events;
 using VainBotTwitch.Classes;
 using VainBotTwitch.Commands;
 using VainBotTwitch.PubSubHandlers;
@@ -47,6 +48,9 @@ namespace VainBotTwitch
                 .Build();
 
             _config = new BotConfig(config);
+
+            AppDomain.CurrentDomain.UnhandledException += async (_, e) =>
+                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: Error with Twitch bot, check logs.", _config.DiscordWebhookUrl);
 
             _api = new TwitchAPI();
             _api.Settings.ClientId = _config.TwitchClientId;
@@ -91,6 +95,7 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceConnected += PubSubConnected;
             _pubSub.OnPubSubServiceClosed += PubSubClosed;
             _pubSub.OnPubSubServiceError += PubSubClosed;
+            _pubSub.OnListenResponse += ListenResponse;
 
             _subPointsHandler = new SubPointsHandler(_config, _client, _pubSub, _slothySvc);
             _stretchTimerHandler = new StretchTimerHandler(_config, _client, _pubSub);
@@ -184,10 +189,10 @@ namespace VainBotTwitch
             ConnectChat();
         }
 
-        private void ChatIncorrectLogin(object sender, OnIncorrectLoginArgs e)
+        private async void ChatIncorrectLogin(object sender, OnIncorrectLoginArgs e)
         {
             Utils.LogToConsole($"Chat incorrect login: {e.Exception.Message}");
-            ConnectChat();
+            await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing} Incorrect chat credentials for Twitch bot", _config.DiscordWebhookUrl);
         }
 
         private void ReconnectPubSub()
@@ -213,6 +218,14 @@ namespace VainBotTwitch
             _pubSub.ListenToVideoPlayback(_config.TwitchChannel);
             _pubSub.SendTopics(_config.SubPointsAccessToken);
             Utils.LogToConsole("PubSub connected and topics sent");
+        }
+
+        private async void ListenResponse(object sender, OnListenResponseArgs e)
+        {
+            Utils.LogToConsole($"Listen response | success: {e.Successful} | topic: {e.Topic} | response: {e.Response.Error}");
+
+            if (!e.Successful)
+                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing} Error in ListenResponse, Twitch bot", _config.DiscordWebhookUrl);
         }
 
         private void PubSubClosed(object sender, EventArgs e)

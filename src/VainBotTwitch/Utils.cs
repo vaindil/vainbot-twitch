@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -8,6 +11,8 @@ namespace VainBotTwitch
 {
     public static class Utils
     {
+        private static readonly HttpClient _httpClient = new HttpClient();
+
         public static JoinedChannel GetChannel(this OnChatCommandReceivedArgs e, TwitchClient client)
         {
             return client.GetJoinedChannel(e.Command.ChatMessage.Channel);
@@ -76,6 +81,17 @@ namespace VainBotTwitch
                 return "π";
             else
                 return num.ToString();
+        }
+
+        public static Task<HttpResponseMessage> SendDiscordErrorWebhookAsync(string message, string webhookUrl)
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, webhookUrl)
+            {
+                Content = new StringContent("{\"content\":\"" + message + "\"}")
+            };
+            requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            return _httpClient.SendAsync(requestMessage);
         }
     }
 }

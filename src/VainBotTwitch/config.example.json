@@ -12,5 +12,7 @@
   "subPointsRefreshToken": "",
   "subPointsApiUrl": "", // without trailing slash
   "subPointsApiSecret": "",
-  "stretchReminderFrequency": 10 // in seconds
+  "stretchReminderFrequency": 10, // in seconds
+  "discordWebhookUrl": "",
+  "discordWebhookUserPing": ""
 }

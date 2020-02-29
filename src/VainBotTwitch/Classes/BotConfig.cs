@@ -20,6 +20,8 @@ namespace VainBotTwitch.Classes
             SubPointsApiUrl = config["subPointsApiUrl"];
             SubPointsApiSecret = config["subPointsApiSecret"];
             StretchReminderFrequency = int.Parse(config["stretchReminderFrequency"]);
+            DiscordWebhookUrl = config["discordWebhookUrl"];
+            DiscordWebhookUserPing = config["discordWebhookUserPing"];
         }
 
         public string ConnectionString { get; set; }
@@ -49,5 +51,9 @@ namespace VainBotTwitch.Classes
         public string SubPointsApiSecret { get; set; }
 
         public int StretchReminderFrequency { get; set; }
+
+        public string DiscordWebhookUrl { get; set; }
+
+        public string DiscordWebhookUserPing { get; set; }
     }
 }
