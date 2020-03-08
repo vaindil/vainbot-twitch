@@ -5,14 +5,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
-using VainBotTwitch.Classes;
+using VainBotTwitch.Classes.QuoteRecords;
 
 namespace VainBotTwitch.Commands
 {
-    public class QuoteCommandHandler
+    public class QuoteCommandHandler<T> where T : QuoteRecordBase, new()
     {
         private readonly TwitchClient _client;
-        private List<QuoteRecord> _quotes;
+        private readonly string _name;
+        private List<T> _quotes;
 
         private readonly Random _rng = new Random();
         private int? _lastQuoteId;
@@ -20,28 +21,34 @@ namespace VainBotTwitch.Commands
         public QuoteCommandHandler(TwitchClient client)
         {
             _client = client;
+            if (typeof(T) == typeof(CrendorQuoteRecord))
+                _name = "Crendor";
+            else
+                _name = "Nick";
         }
 
         public async Task InitializeAsync()
         {
             using var db = new VbContext();
-            _quotes = await db.Quotes
+            _quotes = await db.Set<T>()
                 .OrderBy(x => x.Id)
                 .ToListAsync();
         }
 
         public async Task HandleCommandAsync(OnChatCommandReceivedArgs e)
         {
-            if (string.Equals(e.Command.CommandText, "lastquote", StringComparison.InvariantCultureIgnoreCase))
+            var lcaseCommand = e.Command.CommandText.ToLowerInvariant();
+
+            if (lcaseCommand.StartsWith("last") && lcaseCommand.EndsWith("quote"))
             {
                 GetLastQuoteId(e);
                 return;
             }
 
-            if (e.IsMod() && string.Equals(e.Command.CommandText, "dbupdate", StringComparison.InvariantCultureIgnoreCase))
+            if (e.IsMod() && lcaseCommand.EndsWith("dbupdate"))
             {
                 await InitializeAsync();
-                _client.SendMessage(e, "Quotes updated.");
+                _client.SendMessage(e, $"{_name} quotes updated.");
                 return;
             }
 
@@ -64,7 +71,8 @@ namespace VainBotTwitch.Commands
         {
             if (_quotes.Count == 0)
             {
-                _client.SendMessage(e, "No quotes have been added. Yell at the mods.");
+                _client.SendMessage(e, $"No {_name} quotes have been added. Yell at the mods.");
+                return;
             }
 
             var quote = _quotes[_rng.Next(_quotes.Count)];
@@ -77,7 +85,7 @@ namespace VainBotTwitch.Commands
         {
             var quote = _quotes.Find(x => x.Id == quoteId);
 
-            var message = "No quote with that ID exists.";
+            var message = $"No {_name} quote with that ID exists.";
             if (quote != null)
             {
                 message = GetQuoteString(quote);
@@ -87,16 +95,11 @@ namespace VainBotTwitch.Commands
             _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {message}");
         }
 
-        private string GetQuoteString(QuoteRecord quote)
-        {
-            return $"\"{quote.Quote}\" - Crendor, {quote.AddedAt.Year}";
-        }
-
         private void GetLastQuoteId(OnChatCommandReceivedArgs e)
         {
-            var message = "No quote has been requested since the bot was last restarted.";
+            var message = $"No {_name} quote has been requested since the bot was last restarted.";
             if (_lastQuoteId.HasValue)
-                message = $"The ID of the last quote was {_lastQuoteId}.";
+                message = $"The ID of the last {_name} quote was {_lastQuoteId}.";
 
             _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {message}");
         }
@@ -109,7 +112,7 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var quoteRecord = new QuoteRecord
+            var quoteRecord = new T
             {
                 Quote = e.Command.ArgumentsAsString.Trim('"'),
                 AddedBy = e.Command.ChatMessage.Username,
@@ -120,11 +123,16 @@ namespace VainBotTwitch.Commands
 
             using (var db = new VbContext())
             {
-                db.Quotes.Add(quoteRecord);
+                db.Set<T>().Add(quoteRecord);
                 await db.SaveChangesAsync();
             }
 
-            _client.SendMessage(e, $"@{e.Command.ChatMessage.Username}: Quote added.");
+            _client.SendMessage(e, $"@{e.Command.ChatMessage.Username}: {_name} quote added.");
+        }
+
+        private string GetQuoteString(T quote)
+        {
+            return $"\"{quote.Quote}\" - {_name}, {quote.AddedAt.Year}";
         }
     }
 }

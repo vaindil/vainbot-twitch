@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using VainBotTwitch.Classes;
+using VainBotTwitch.Classes.QuoteRecords;
 using VainBotTwitch.DbConfigs;
 
 namespace VainBotTwitch
@@ -15,7 +16,8 @@ namespace VainBotTwitch
 
         public DbSet<SlothyRecord> Slothies { get; set; }
         public DbSet<MultiStreamer> MultiStreamers { get; set; }
-        public DbSet<QuoteRecord> Quotes { get; set; }
+        public DbSet<CrendorQuoteRecord> CrendorQuotes { get; set; }
+        public DbSet<OmarQuoteRecord> OmarQuotes { get; set; }
         public DbSet<SlothyBetRecord> SlothyBetRecords { get; set; }
         public DbSet<KeyValue> KeyValues { get; set; }
 
@@ -25,7 +27,8 @@ namespace VainBotTwitch
 
             modelBuilder.ApplyConfiguration(new SlothyRecordConfig());
             modelBuilder.ApplyConfiguration(new MultiStreamerConfig());
-            modelBuilder.ApplyConfiguration(new QuoteRecordConfig());
+            modelBuilder.ApplyConfiguration(new CrendorQuoteRecordConfig());
+            modelBuilder.ApplyConfiguration(new OmarQuoteRecordConfig());
             modelBuilder.ApplyConfiguration(new SlothyBetRecordConfig());
             modelBuilder.ApplyConfiguration(new KeyValueConfig());
         }

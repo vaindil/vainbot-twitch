@@ -10,6 +10,7 @@ using TwitchLib.Communication.Events;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Events;
 using VainBotTwitch.Classes;
+using VainBotTwitch.Classes.QuoteRecords;
 using VainBotTwitch.Commands;
 using VainBotTwitch.PubSubHandlers;
 using VainBotTwitch.Services;
@@ -27,7 +28,8 @@ namespace VainBotTwitch
         private SlothyBetService _betSvc;
 
         private MultitwitchCommandHandler _multiHandler;
-        private QuoteCommandHandler _quoteHandler;
+        private QuoteCommandHandler<CrendorQuoteRecord> _crendorQuoteHandler;
+        private QuoteCommandHandler<OmarQuoteRecord> _omarQuoteHandler;
         private SlothyCommandHandler _slothyHandler;
         private SlothyBetCommandHandler _slothyBetCommandHandler;
         private SlothFactCommandHandler _slothFactHandler;
@@ -77,8 +79,11 @@ namespace VainBotTwitch
             _multiHandler = new MultitwitchCommandHandler(_client, _api);
             await _multiHandler.InitializeAsync();
 
-            _quoteHandler = new QuoteCommandHandler(_client);
-            await _quoteHandler.InitializeAsync();
+            _crendorQuoteHandler = new QuoteCommandHandler<CrendorQuoteRecord>(_client);
+            await _crendorQuoteHandler.InitializeAsync();
+
+            _omarQuoteHandler = new QuoteCommandHandler<OmarQuoteRecord>(_client);
+            await _omarQuoteHandler.InitializeAsync();
 
             _betSvc = new SlothyBetService();
             await _betSvc.InitializeAsync();
@@ -119,9 +124,28 @@ namespace VainBotTwitch
 
                 case "quote":
                 case "quotes":
+                case "crendorquote":
+                case "crendorquotes":
+                case "quotecrendor":
                 case "lastquote":
+                case "lastcrendorquote":
                 case "dbupdate":
-                    await _quoteHandler.HandleCommandAsync(e);
+                case "crendordbupdate":
+                    await _crendorQuoteHandler.HandleCommandAsync(e);
+                    break;
+
+                case "nickquote":
+                case "nickquotes":
+                case "quotenick":
+                case "omarquote":
+                case "omarquotes":
+                case "quoteomar":
+                case "quotesomar":
+                case "lastnickquote":
+                case "lastomarquote":
+                case "nickdbupdate":
+                case "omardbupdate":
+                    await _omarQuoteHandler.HandleCommandAsync(e);
                     break;
 
                 case "slothy":
