@@ -28,9 +28,21 @@ namespace VainBotTwitch
             var display = count.GetNumberString() + " ";
 
             if (count == 1)
+            {
                 display += "slothy";
+            }
             else
+            {
                 display += "slothies";
+                if (count == decimal.MinValue)
+                {
+                    display += ", and that number can't go any lower";
+                }
+                else if (count == decimal.MaxValue)
+                {
+                    display += ", and that number can't go any higher";
+                }
+            }
 
             return display;
         }
@@ -75,12 +87,10 @@ namespace VainBotTwitch
 
         private static string GetNumberString(this decimal num)
         {
-            if ((int)num == num)
-                return ((int)num).ToString();
-            else if (num == 3.14M)
+            if (num == 3.14M)
                 return "π";
             else
-                return num.ToString();
+                return num.ToString("0.##");
         }
 
         public static Task<HttpResponseMessage> SendDiscordErrorWebhookAsync(string message, string webhookUrl)

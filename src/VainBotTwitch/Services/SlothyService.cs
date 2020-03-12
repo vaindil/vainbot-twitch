@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using VainBotTwitch.Classes;
@@ -34,7 +35,17 @@ namespace VainBotTwitch.Services
             var record = _slothyRecords.Find(x => x.UserId == userId);
             if (record != null)
             {
-                record.Count += count;
+                try
+                {
+                    record.Count += count;
+                }
+                catch (OverflowException)
+                {
+                    if (count > 0)
+                        record.Count = decimal.MaxValue;
+                    else
+                        record.Count = decimal.MinValue;
+                }
             }
             else
             {

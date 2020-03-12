@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Api.V5.Models.Users;
@@ -13,6 +14,8 @@ namespace VainBotTwitch.Commands
         private readonly TwitchClient _client;
         private readonly TwitchAPI _api;
         private readonly SlothyService _slothySvc;
+
+        private readonly string _vaindilId = "45447900";
 
         public SlothyCommandHandler(TwitchClient client, TwitchAPI api, SlothyService slothySvc)
         {
@@ -62,7 +65,7 @@ namespace VainBotTwitch.Commands
         private void GetSlothies(OnChatCommandReceivedArgs e)
         {
             var count = _slothySvc.GetSlothyCount(e.Command.ChatMessage.UserId);
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {GetSlothyDisplayString(count)}.");
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName} has {GetSlothyDisplayString(count, e.Command.ChatMessage.UserId)}.");
         }
 
         private async Task GetSlothiesForUsernameAsync(OnChatCommandReceivedArgs e)
@@ -84,7 +87,7 @@ namespace VainBotTwitch.Commands
             }
 
             var count = _slothySvc.GetSlothyCount(user.Id);
-            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {user.DisplayName} has {GetSlothyDisplayString(count)}.");
+            _client.SendMessage(e, $"{e.Command.ChatMessage.DisplayName}: {user.DisplayName} has {GetSlothyDisplayString(count, user.Id)}.");
         }
 
         private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
@@ -113,7 +116,7 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            if (userId == "45447900")
+            if (userId == _vaindilId)
             {
                 _client.SendMessage(e, "vaindil's slothies can't be edited, you nerd.");
                 return;
@@ -145,9 +148,9 @@ namespace VainBotTwitch.Commands
             _client.SendMessage(e, $"{origUsername} now has {count.ToDisplayString()}.");
         }
 
-        private string GetSlothyDisplayString(decimal count)
+        private string GetSlothyDisplayString(decimal count, string userId)
         {
-            if (count == decimal.MinValue)
+            if (userId == _vaindilId)
                 return "an uncountable number of slothies";
 
             return count.ToDisplayString();
