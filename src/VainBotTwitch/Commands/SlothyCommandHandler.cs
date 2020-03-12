@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Api.V5.Models.Users;
@@ -16,6 +17,11 @@ namespace VainBotTwitch.Commands
         private readonly SlothyService _slothySvc;
 
         private readonly string _vaindilId = "45447900";
+
+        private readonly List<string> _modBlacklist = new List<string>
+        {
+            "103012434"
+        };
 
         public SlothyCommandHandler(TwitchClient client, TwitchAPI api, SlothyService slothySvc)
         {
@@ -94,10 +100,16 @@ namespace VainBotTwitch.Commands
         {
             var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
 
+            if (_modBlacklist.Contains(e.Command.ChatMessage.UserId))
+            {
+                _client.SendMessage(e, "You're blacklisted from updating slothies, you nerd.");
+                return;
+            }
+
             var username = origUsername.ToLower();
             if (username.Length >= 200)
             {
-                _client.SendMessage(e, $"That's not a valid user, you nerd.");
+                _client.SendMessage(e, "That's not a valid user, you nerd.");
                 return;
             }
 
