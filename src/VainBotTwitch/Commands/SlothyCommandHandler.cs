@@ -18,11 +18,6 @@ namespace VainBotTwitch.Commands
 
         private readonly string _vaindilId = "45447900";
 
-        private readonly List<string> _modBlacklist = new List<string>
-        {
-            "103012434"
-        };
-
         public SlothyCommandHandler(TwitchClient client, TwitchAPI api, SlothyService slothySvc)
         {
             _client = client;
@@ -99,12 +94,6 @@ namespace VainBotTwitch.Commands
         private async Task UpdateSlothiesAsync(OnChatCommandReceivedArgs e)
         {
             var origUsername = e.Command.ArgumentsAsList[0].TrimStart('@');
-
-            if (_modBlacklist.Contains(e.Command.ChatMessage.UserId))
-            {
-                _client.SendMessage(e, "You're blacklisted from updating slothies, you nerd.");
-                return;
-            }
 
             var username = origUsername.ToLower();
             if (username.Length >= 200)
