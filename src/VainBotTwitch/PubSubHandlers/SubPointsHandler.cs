@@ -255,7 +255,7 @@ namespace VainBotTwitch.PubSubHandlers
         private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync(string cursor = null)
         {
             // endpoint isn't supported by library, so query it manually
-            var url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=b_id&first=100";
+            var url = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={_config.TwitchChannelId}&first=100";
             if (cursor != null)
                 url += $"&after={cursor}";
 
@@ -264,7 +264,15 @@ namespace VainBotTwitch.PubSubHandlers
             request.Headers.Add("Client-ID", _config.TwitchClientId);
 
             var response = await _httpClient.SendAsync(request);
-            return JsonSerializer.Deserialize<TwitchSubscribersResponse>(await response.Content.ReadAsStringAsync());
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBegin = $"Status code {response.StatusCode} when getting subscribers from API";
+                Utils.LogToConsole($"{errorBegin}: {body}");
+                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: {errorBegin}", _config.DiscordWebhookUrl);
+            }
+
+            return JsonSerializer.Deserialize<TwitchSubscribersResponse>(body);
         }
     }
 }
