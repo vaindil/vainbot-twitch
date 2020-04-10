@@ -1,8 +1,9 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib.Client;
@@ -24,6 +25,8 @@ namespace VainBotTwitch.PubSubHandlers
         private readonly Random _rng = new Random();
 
         private readonly TwitchPubSub _pubSub;
+
+        private List<TwitchSubscriber> _currentSubs = new List<TwitchSubscriber>();
 
 #pragma warning disable IDE0052 // Remove unread private members
         private readonly Timer _manualUpdateTimer;
@@ -48,19 +51,17 @@ namespace VainBotTwitch.PubSubHandlers
 
             if (_config.TrackSubPoints)
             {
-                _manualUpdateTimer = new Timer(async _ => await GetCurrentPointsAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+                _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
                 _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             }
         }
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
         {
-            // a resub may or may not count toward current sub points because of the grace period,
-            // so it has to be checked manually
-            if (e.Subscription.Context == "resub" && _config.TrackSubPoints)
+            if (e.Subscription.Context == "resub"
+                && _config.TrackSubPoints
+                && _currentSubs.Any(x => x.UserId == e.Subscription.UserId))
             {
-                await Task.Delay(10000);
-                await GetCurrentPointsAsync();
                 return;
             }
 
@@ -87,8 +88,6 @@ namespace VainBotTwitch.PubSubHandlers
                 Utils.LogToConsole($"New sub from {e.Subscription.Username}, tier: {e.Subscription.SubscriptionPlan} | " +
                     $"Old count: {oldScore} | New count: {_currentPoints}");
             }
-
-            await UpdateRemoteCountAsync();
 
             if (e.Subscription.Context == "sub")
                 await NewSubDieRollAsync(e.Subscription.DisplayName, e.Subscription.UserId);
@@ -179,25 +178,6 @@ namespace VainBotTwitch.PubSubHandlers
             }
         }
 
-        private async Task GetCurrentPointsAsync()
-        {
-            if (!_config.TrackSubPoints)
-                return;
-
-            var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"https://api.twitch.tv/api/channels/{_config.TwitchChannel}/subscriber_count");
-            request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _config.SubPointsAccessToken);
-
-            var response = await _httpClient.SendAsync(request);
-            var counts = JsonConvert.DeserializeObject<TwitchSubCountResponse>(await response.Content.ReadAsStringAsync());
-
-            if (_config.VerboseSubPointsLogging)
-                Utils.LogToConsole($"Points manually queried from the API. Old score {_currentPoints} | new score {counts.Score}");
-
-            _currentPoints = counts.Score;
-        }
-
         private async Task HandleSubBatchAsync()
         {
             if (_previousPoints != _currentPoints)
@@ -206,16 +186,20 @@ namespace VainBotTwitch.PubSubHandlers
                     Utils.LogToConsole($"Previous points: {_previousPoints} | New points: {_currentPoints} | Sending update to WS");
 
                 _previousPoints = _currentPoints;
-                await UpdateRemoteCountAsync();
+                await UpdateRemoteCountAsync(true);
             }
         }
 
-        private async Task UpdateRemoteCountAsync()
+        private async Task UpdateRemoteCountAsync(bool hard)
         {
             if (!_config.TrackSubPoints)
                 return;
 
-            var request = new HttpRequestMessage(HttpMethod.Put, $"{_config.SubPointsApiUrl}/{_currentPoints}");
+            var method = HttpMethod.Post;
+            if (hard)
+                method = HttpMethod.Put;
+
+            var request = new HttpRequestMessage(method, $"{_config.SubPointsApiUrl}/{_currentPoints}");
             request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 
             await _httpClient.SendAsync(request);
@@ -237,20 +221,21 @@ namespace VainBotTwitch.PubSubHandlers
             public int NumSubs { get; set; }
         }
 
-        /* *****************************
-         * I wrote this before I discovered the sub count endpoint, I'm keeping it here because I'll
-         * probably need to use it at some point, whenever Twitch decides to kill the old API.
-
         private async Task UpdateSubPointsFromApiAsync()
         {
             var tierList = new List<TwitchSubscriber>();
             var data = await CreateAndSendRequestAsync();
-            tierList.AddRange(data.Data);
+            tierList.AddRange(data.Subscribers);
 
-            while (data.Data.Count > 0 && data?.Pagination?.Cursor != null)
+            while (data.Subscribers.Count > 0 && data?.Pagination?.Cursor != null)
             {
                 data = await CreateAndSendRequestAsync(data.Pagination.Cursor);
-                tierList.AddRange(data.Data);
+                tierList.AddRange(data.Subscribers);
+            }
+
+            lock (_currentSubs)
+            {
+                _currentSubs = tierList.ToList();
             }
 
             // broadcaster is considered a subscriber but doesn't count toward sub points
@@ -264,7 +249,7 @@ namespace VainBotTwitch.PubSubHandlers
             var twoPointCount = tierList.Count(x => x.Tier == "2000");
             var sixPointCount = tierList.Count(x => x.Tier == "3000");
 
-            var totalPoints = onePointCount + (2 * twoPointCount) + (6 * sixPointCount);
+            _currentPoints = onePointCount + (2 * twoPointCount) + (6 * sixPointCount);
         }
 
         private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync(string cursor = null)
@@ -275,12 +260,11 @@ namespace VainBotTwitch.PubSubHandlers
                 url += $"&after={cursor}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _config["subPointsAccessToken"]);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _config.SubPointsAccessToken);
+            request.Headers.Add("Client-ID", _config.TwitchClientId);
 
             var response = await _httpClient.SendAsync(request);
-            return JsonConvert.DeserializeObject<TwitchSubscribersResponse>(await response.Content.ReadAsStringAsync());
+            return JsonSerializer.Deserialize<TwitchSubscribersResponse>(await response.Content.ReadAsStringAsync());
         }
-
-        ****************************************** */
     }
 }

@@ -1,7 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TwitchLib.Client;
@@ -53,11 +52,14 @@ namespace VainBotTwitch.Commands
 
             if (!response.IsSuccessStatusCode)
             {
-                _client.SendMessage(e, "Error getting the weather. IT'S THEIR FAULT, NOT MINE!");
+                await Utils.SendDiscordErrorWebhookAsync(
+                    $"{_config.DiscordWebhookUserPing}: Error getting weather with Twitch bot.", _config.DiscordWebhookUrl);
+
+                _client.SendMessage(e, "Error getting the weather, sorry!");
                 return;
             }
 
-            var weather = JsonConvert.DeserializeObject<OpenWeatherMapResponse>(respString);
+            var weather = JsonSerializer.Deserialize<OpenWeatherMapResponse>(respString);
 
             var temp = (int)Math.Round(((9 / 5) * (weather.Main.Temperature - 273)) + 32);
 

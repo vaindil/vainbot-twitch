@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Api.V5.Models.Users;
