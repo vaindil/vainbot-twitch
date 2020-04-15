@@ -202,7 +202,7 @@ namespace VainBotTwitch.PubSubHandlers
             var request = new HttpRequestMessage(method, $"{_config.SubPointsApiUrl}/{_currentPoints}");
             request.Headers.Authorization = new AuthenticationHeaderValue(_config.SubPointsApiSecret);
 
-            await _httpClient.SendAsync(request);
+            // await _httpClient.SendAsync(request);
         }
 
         private class GiftedSubBatch
@@ -223,6 +223,9 @@ namespace VainBotTwitch.PubSubHandlers
 
         private async Task UpdateSubPointsFromApiAsync()
         {
+            if (!_config.TrackSubPoints)
+                return;
+
             var tierList = new List<TwitchSubscriber>();
             var data = await CreateAndSendRequestAsync();
             tierList.AddRange(data.Subscribers);
@@ -245,11 +248,7 @@ namespace VainBotTwitch.PubSubHandlers
             var t2 = tierList.Where(x => x.Tier == "2000").ToList();
             var t3 = tierList.Where(x => x.Tier == "3000").ToList();
 
-            var onePointCount = tierList.Count(x => x.Tier == "1000" || x.Tier == "Prime");
-            var twoPointCount = tierList.Count(x => x.Tier == "2000");
-            var sixPointCount = tierList.Count(x => x.Tier == "3000");
-
-            _currentPoints = onePointCount + (2 * twoPointCount) + (6 * sixPointCount);
+            _currentPoints = t1.Count + (2 * t2.Count) + (6 * t3.Count);
         }
 
         private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync(string cursor = null)

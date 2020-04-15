@@ -26,7 +26,7 @@ namespace VainBotTwitch.Services
             if (record != null)
                 return record.Count;
             else
-                return 0M;
+                return 10M;
         }
 
         public async Task<decimal> AddSlothiesAsync(string userId, decimal count)
@@ -53,7 +53,7 @@ namespace VainBotTwitch.Services
                 record = new SlothyRecord
                 {
                     UserId = userId,
-                    Count = count
+                    Count = count + 10
                 };
 
                 _slothyRecords.Add(record);
