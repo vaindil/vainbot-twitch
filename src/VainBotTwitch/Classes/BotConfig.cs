@@ -17,6 +17,8 @@ namespace VainBotTwitch.Classes
             VerboseSubPointsLogging = bool.Parse(config["verboseSubPointsLogging"]);
             SubPointsAccessToken = config["subPointsAccessToken"];
             SubPointsRefreshToken = config["subPointsRefreshToken"];
+            SubPointsClientId = config["subPointsClientId"];
+            SubPointsClientSecret = config["subPointsClientSecret"];
             SubPointsApiUrl = config["subPointsApiUrl"];
             SubPointsApiSecret = config["subPointsApiSecret"];
             StretchReminderFrequency = int.Parse(config["stretchReminderFrequency"]);
@@ -45,6 +47,10 @@ namespace VainBotTwitch.Classes
         public string SubPointsAccessToken { get; set; }
 
         public string SubPointsRefreshToken { get; set; }
+
+        public string SubPointsClientId { get; set; }
+
+        public string SubPointsClientSecret { get; set; }
 
         public string SubPointsApiUrl { get; set; }
 

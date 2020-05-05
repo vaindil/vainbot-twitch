@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Enums;
@@ -19,12 +20,12 @@ namespace VainBotTwitch.PubSubHandlers
     {
         private readonly BotConfig _config;
         private readonly TwitchClient _client;
+        private readonly TwitchPubSub _pubSub;
+        private readonly TwitchAPI _api;
         private readonly SlothyService _slothySvc;
 
         private readonly HttpClient _httpClient = new HttpClient();
         private readonly Random _rng = new Random();
-
-        private readonly TwitchPubSub _pubSub;
 
         private List<TwitchSubscriber> _currentSubs = new List<TwitchSubscriber>();
 
@@ -32,6 +33,7 @@ namespace VainBotTwitch.PubSubHandlers
         private readonly Timer _manualUpdateTimer;
         private readonly Timer _batchSubUpdateTimer;
         private Timer _giftedSubBatchTimer;
+        private Timer _tokenRefreshTimer;
 #pragma warning restore IDE0052 // Remove unread private members
 
         private readonly List<GiftedSubBatch> _giftedSubBatches = new List<GiftedSubBatch>();
@@ -40,11 +42,12 @@ namespace VainBotTwitch.PubSubHandlers
         private int _previousPoints;
         private int _currentPoints;
 
-        public SubPointsHandler(BotConfig config, TwitchClient client, TwitchPubSub pubSub, SlothyService slothySvc)
+        public SubPointsHandler(BotConfig config, TwitchClient client, TwitchPubSub pubSub, TwitchAPI api, SlothyService slothySvc)
         {
             _config = config;
             _client = client;
             _pubSub = pubSub;
+            _api = api;
             _slothySvc = slothySvc;
 
             _pubSub.OnChannelSubscription += OnChannelSubscription;
@@ -54,6 +57,36 @@ namespace VainBotTwitch.PubSubHandlers
                 _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
                 _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             }
+        }
+
+        public async Task InitializeAsync()
+        {
+            var raw = await KeyValueService.GetByKeyAsync("SubPointsTokens");
+            if (raw != null)
+            {
+                var split = raw.Value.Split("|||||");
+                _config.SubPointsRefreshToken = split[1];
+            }
+
+            await RefreshTokenAsync();
+        }
+
+        private async Task RefreshTokenAsync()
+        {
+            _api.Settings.AccessToken = null;
+            _api.Settings.ClientId = _config.SubPointsClientId;
+
+            var resp = await _api.V5.Auth.RefreshAuthTokenAsync(_config.SubPointsRefreshToken, _config.SubPointsClientSecret);
+            _config.SubPointsAccessToken = resp.AccessToken;
+            _config.SubPointsRefreshToken = resp.RefreshToken;
+
+            _api.Settings.AccessToken = _config.TwitchOAuth;
+            _api.Settings.ClientId = _config.TwitchClientId;
+
+            _tokenRefreshTimer.Dispose();
+            _tokenRefreshTimer = new Timer(async _ => await RefreshTokenAsync(), null, TimeSpan.FromSeconds(resp.ExpiresIn - 600), TimeSpan.FromMilliseconds(-1));
+
+            await KeyValueService.CreateOrUpdateAsync("SubPointsTokens", $"{resp.AccessToken}|||||{resp.RefreshToken}");
         }
 
         private async void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
@@ -266,7 +299,7 @@ namespace VainBotTwitch.PubSubHandlers
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _config.SubPointsAccessToken);
-            request.Headers.Add("Client-ID", _config.TwitchClientId);
+            request.Headers.Add("Client-ID", _config.SubPointsClientId);
 
             var response = await _httpClient.SendAsync(request);
             var body = await response.Content.ReadAsStringAsync();

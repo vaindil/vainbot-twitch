@@ -102,7 +102,9 @@ namespace VainBotTwitch
             _pubSub.OnPubSubServiceError += PubSubClosed;
             _pubSub.OnListenResponse += ListenResponse;
 
-            _subPointsHandler = new SubPointsHandler(_config, _client, _pubSub, _slothySvc);
+            _subPointsHandler = new SubPointsHandler(_config, _client, _pubSub, _api, _slothySvc);
+            await _subPointsHandler.InitializeAsync();
+
             _stretchTimerHandler = new StretchTimerHandler(_config, _client, _pubSub);
 
             _pubSubReconnectTimer = new Timer(_ => ReconnectPubSub(), null, TimeSpan.Zero, TimeSpan.FromHours(18));

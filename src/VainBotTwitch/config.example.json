@@ -10,6 +10,8 @@
   "verboseSubPointsLogging": false,
   "subPointsAccessToken": "",
   "subPointsRefreshToken": "",
+  "subPointsClientId": "",
+  "subPointsClientSecret": "",
   "subPointsApiUrl": "", // without trailing slash
   "subPointsApiSecret": "",
   "stretchReminderFrequency": 10, // in seconds
