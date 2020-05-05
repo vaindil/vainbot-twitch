@@ -1,6 +1,8 @@
 [Unit]
 Description=VainBot Twitch
 After=network.target
+StartLimitBurst=2
+StartLimitIntervalSec=99999999
 
 [Service]
 Type=simple
