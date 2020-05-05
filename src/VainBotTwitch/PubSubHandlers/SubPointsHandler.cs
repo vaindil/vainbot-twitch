@@ -62,7 +62,7 @@ namespace VainBotTwitch.PubSubHandlers
         public async Task InitializeAsync()
         {
             var raw = await KeyValueService.GetByKeyAsync("SubPointsTokens");
-            if (raw != null)
+            if (!string.IsNullOrEmpty(raw?.Value))
             {
                 var split = raw.Value.Split("|||||");
                 _config.SubPointsRefreshToken = split[1];
@@ -83,7 +83,7 @@ namespace VainBotTwitch.PubSubHandlers
             _api.Settings.AccessToken = _config.TwitchOAuth;
             _api.Settings.ClientId = _config.TwitchClientId;
 
-            _tokenRefreshTimer.Dispose();
+            _tokenRefreshTimer?.Dispose();
             _tokenRefreshTimer = new Timer(async _ => await RefreshTokenAsync(), null, TimeSpan.FromSeconds(resp.ExpiresIn - 600), TimeSpan.FromMilliseconds(-1));
 
             await KeyValueService.CreateOrUpdateAsync("SubPointsTokens", $"{resp.AccessToken}|||||{resp.RefreshToken}");
