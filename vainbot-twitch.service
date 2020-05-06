@@ -2,7 +2,7 @@
 Description=VainBot Twitch
 After=network.target
 StartLimitBurst=2
-StartLimitIntervalSec=99999999
+StartLimitIntervalSec=15
 
 [Service]
 Type=simple

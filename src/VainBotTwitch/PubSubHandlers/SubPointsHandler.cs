@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -41,6 +42,8 @@ namespace VainBotTwitch.PubSubHandlers
 
         private int _previousPoints;
         private int _currentPoints;
+
+        private bool _isRetryingForFailedAuth;
 
         public SubPointsHandler(BotConfig config, TwitchClient client, TwitchPubSub pubSub, TwitchAPI api, SlothyService slothySvc)
         {
@@ -305,11 +308,19 @@ namespace VainBotTwitch.PubSubHandlers
             var body = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
+                if (response.StatusCode == HttpStatusCode.Unauthorized && !_isRetryingForFailedAuth)
+                {
+                    _isRetryingForFailedAuth = true;
+                    await RefreshTokenAsync();
+                    return await CreateAndSendRequestAsync(cursor);
+                }
+
                 var errorBegin = $"Status code {response.StatusCode} when getting subscribers from API";
                 Utils.LogToConsole($"{errorBegin}: {body}");
                 await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: {errorBegin}", _config.DiscordWebhookUrl);
             }
 
+            _isRetryingForFailedAuth = false;
             return JsonSerializer.Deserialize<TwitchSubscribersResponse>(body);
         }
     }
