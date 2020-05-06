@@ -30,8 +30,8 @@ namespace VainBotTwitch.PubSubHandlers
         private List<TwitchSubscriber> _currentSubs = new List<TwitchSubscriber>();
 
 #pragma warning disable IDE0052 // Remove unread private members
-        private readonly Timer _manualUpdateTimer;
-        private readonly Timer _batchSubUpdateTimer;
+        private Timer _manualUpdateTimer;
+        private Timer _batchSubUpdateTimer;
         private Timer _giftedSubBatchTimer;
         private Timer _tokenRefreshTimer;
 #pragma warning restore IDE0052 // Remove unread private members
@@ -49,14 +49,6 @@ namespace VainBotTwitch.PubSubHandlers
             _pubSub = pubSub;
             _api = api;
             _slothySvc = slothySvc;
-
-            _pubSub.OnChannelSubscription += OnChannelSubscription;
-
-            if (_config.TrackSubPoints)
-            {
-                _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
-                _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
-            }
         }
 
         public async Task InitializeAsync()
@@ -69,6 +61,14 @@ namespace VainBotTwitch.PubSubHandlers
             }
 
             await RefreshTokenAsync();
+
+            _pubSub.OnChannelSubscription += OnChannelSubscription;
+
+            if (_config.TrackSubPoints)
+            {
+                _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+                _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+            }
         }
 
         private async Task RefreshTokenAsync()
