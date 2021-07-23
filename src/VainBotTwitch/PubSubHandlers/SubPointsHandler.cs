@@ -317,7 +317,11 @@ namespace VainBotTwitch.PubSubHandlers
 
                 var errorBegin = $"Status code {response.StatusCode} when getting subscribers from API";
                 Utils.LogToConsole($"{errorBegin}: {body}");
-                await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: {errorBegin}", _config.DiscordWebhookUrl);
+
+                if (response.StatusCode != HttpStatusCode.BadGateway && response.StatusCode != HttpStatusCode.GatewayTimeout)
+                {
+                    await Utils.SendDiscordErrorWebhookAsync($"{_config.DiscordWebhookUserPing}: {errorBegin}", _config.DiscordWebhookUrl);
+                }
             }
 
             _isRetryingForFailedAuth = false;
