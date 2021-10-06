@@ -61,7 +61,7 @@ namespace VainBotTwitch.Commands
 
             var weather = JsonSerializer.Deserialize<OpenWeatherMapResponse>(respString);
 
-            var temp = (int)Math.Round(((9 / 5) * (weather.Main.Temperature - 273)) + 32);
+            var temp = (int)Math.Round(((weather.Main.Temperature * 9) / 5) - 459.67m, 1);
 
             _client.SendMessage(e, $"WOPPY ACTIVATED! Weather for {e.Command.ArgumentsAsString}: " +
                 $"{weather.Weather[0].Description}, {temp}° F");
