@@ -69,7 +69,7 @@ namespace VainBotTwitch.PubSubHandlers
 
             if (_config.TrackSubPoints)
             {
-                _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+                _manualUpdateTimer = new Timer(async _ => await UpdateSubPointsFromApiAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
                 _batchSubUpdateTimer = new Timer(async _ => await HandleSubBatchAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             }
         }
@@ -265,40 +265,18 @@ namespace VainBotTwitch.PubSubHandlers
             if (!_config.TrackSubPoints)
                 return;
 
-            var tierList = new List<TwitchSubscriber>();
             var data = await CreateAndSendRequestAsync();
-            tierList.AddRange(data.Subscribers);
 
-            while (data.Subscribers.Count > 0 && data?.Pagination?.Cursor != null)
-            {
-                data = await CreateAndSendRequestAsync(data.Pagination.Cursor);
-                tierList.AddRange(data.Subscribers);
-            }
-
-            lock (_currentSubs)
-            {
-                _currentSubs = tierList.ToList();
-            }
-
-            // broadcaster is considered a subscriber but doesn't count toward sub points
-            tierList = tierList.Where(x => x.UserId != "7555574").ToList();
-
-            var t1 = tierList.Where(x => x.Tier == "1000" || x.Tier == "Prime").ToList();
-            var t2 = tierList.Where(x => x.Tier == "2000").ToList();
-            var t3 = tierList.Where(x => x.Tier == "3000").ToList();
-
-            _currentPoints = t1.Count + (2 * t2.Count) + (6 * t3.Count);
+            _currentPoints = data.Points;
 
             if (_config.VerboseSubPointsLogging)
-                Utils.LogToConsole($"Sub points updated from API. Total: {_currentPoints} | T1: {t1.Count} | T2: {t2.Count} | T3: {t3.Count}");
+                Utils.LogToConsole($"Sub points updated from API. Total: {_currentPoints}");
         }
 
-        private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync(string cursor = null)
+        private async Task<TwitchSubscribersResponse> CreateAndSendRequestAsync()
         {
             // endpoint isn't supported by library, so query it manually
-            var url = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={_config.TwitchChannelId}&first=100";
-            if (cursor != null)
-                url += $"&after={cursor}";
+            var url = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={_config.TwitchChannelId}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _config.SubPointsAccessToken);
@@ -312,7 +290,7 @@ namespace VainBotTwitch.PubSubHandlers
                 {
                     _isRetryingForFailedAuth = true;
                     await RefreshTokenAsync();
-                    return await CreateAndSendRequestAsync(cursor);
+                    return await CreateAndSendRequestAsync();
                 }
 
                 var errorBegin = $"Status code {response.StatusCode} when getting subscribers from API";

@@ -10,6 +10,12 @@ namespace VainBotTwitch.Classes
 
         [JsonPropertyName("pagination")]
         public TwitchPagination Pagination { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("points")]
+        public int Points { get; set; }
     }
 
     public class TwitchSubscriber
