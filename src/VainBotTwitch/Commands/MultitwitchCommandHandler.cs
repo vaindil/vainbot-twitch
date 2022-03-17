@@ -120,8 +120,8 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var validUsernames = await _api.V5.Users.GetUsersByNameAsync(streamers);
-            if (validUsernames.Total != streamers.Count)
+            var validUsernames = await _api.Helix.Users.GetUsersAsync(logins: streamers);
+            if (validUsernames.Users.Length != streamers.Count)
             {
                 _client.SendMessage(e, $"At least one of those isn't a valid user, you nerd.");
 

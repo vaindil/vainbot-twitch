@@ -79,7 +79,7 @@ namespace VainBotTwitch.PubSubHandlers
             _api.Settings.AccessToken = null;
             _api.Settings.ClientId = _config.SubPointsClientId;
 
-            var resp = await _api.V5.Auth.RefreshAuthTokenAsync(_config.SubPointsRefreshToken, _config.SubPointsClientSecret);
+            var resp = await _api.Auth.RefreshAuthTokenAsync(_config.SubPointsRefreshToken, _config.SubPointsClientSecret);
             _config.SubPointsAccessToken = resp.AccessToken;
             _config.SubPointsRefreshToken = resp.RefreshToken;
 

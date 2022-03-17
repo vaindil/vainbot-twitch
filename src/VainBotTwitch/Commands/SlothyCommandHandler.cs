@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using TwitchLib.Api;
-using TwitchLib.Api.V5.Models.Users;
+using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using VainBotTwitch.Services;
@@ -73,11 +74,11 @@ namespace VainBotTwitch.Commands
             User user;
             try
             {
-                var userResponse = await _api.V5.Users.GetUserByNameAsync(username);
-                if (userResponse.Total != 1)
+                var userResponse = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { username });
+                if (userResponse.Users.Length != 1)
                     throw new Exception();
 
-                user = userResponse.Matches[0];
+                user = userResponse.Users[0];
             }
             catch
             {
@@ -100,14 +101,14 @@ namespace VainBotTwitch.Commands
                 return;
             }
 
-            var users = await _api.V5.Users.GetUserByNameAsync(username);
-            if (users.Total != 1)
+            var users = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { username });
+            if (users.Users.Length != 1)
             {
                 _client.SendMessage(e, "That's not a valid user, you nerd.");
                 return;
             }
 
-            var userId = users.Matches[0].Id;
+            var userId = users.Users[0].Id;
 
             if (userId == e.Command.ChatMessage.UserId)
             {
