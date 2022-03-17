@@ -83,8 +83,7 @@ namespace VainBotTwitch.PubSubHandlers
             _config.SubPointsAccessToken = resp.AccessToken;
             _config.SubPointsRefreshToken = resp.RefreshToken;
 
-            _api.Settings.AccessToken = _config.TwitchOAuth;
-            _api.Settings.ClientId = _config.TwitchClientId;
+            _api.Settings.AccessToken = _config.SubPointsAccessToken;
 
             _tokenRefreshTimer?.Dispose();
             _tokenRefreshTimer = new Timer(async _ => await RefreshTokenAsync(), null, TimeSpan.FromSeconds(resp.ExpiresIn - 600), TimeSpan.FromMilliseconds(-1));
