@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -52,10 +53,18 @@ namespace VainBotTwitch.Commands
 
             if (!response.IsSuccessStatusCode)
             {
-                await Utils.SendDiscordErrorWebhookAsync(
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    _client.SendMessage(e, "That zip code doesn't exist. Try again!");
+                }
+                else
+                {
+                    await Utils.SendDiscordErrorWebhookAsync(
                     $"{_config.DiscordWebhookUserPing}: Error getting weather with Twitch bot.", _config.DiscordWebhookUrl);
 
-                _client.SendMessage(e, "Error getting the weather, sorry!");
+                    _client.SendMessage(e, "Error getting the weather, sorry!");
+                }
+
                 return;
             }
 
